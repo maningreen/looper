@@ -1,0 +1,25 @@
+.{
+    .name = .game,
+    .version = "0.0.0",
+    .fingerprint = 0x232b318c52da0d56, // Changing this has security and trust implications.
+    .minimum_zig_version = "0.16.0",
+    .dependencies = .{
+        .mangle = .{
+            .url = "git+https://github.com/maningreen/mangle.zig.git#10af8019671080c95af9eeb78cdccc21252eb1e0",
+            .hash = "mangle-0.0.1-McYoGvonAQA_ANw8URh_dXG34TnIhUun9YhhLfV8EU8b",
+        },
+        .raylib_zig = .{
+            .url = "git+https://github.com/raylib-zig/raylib-zig.git#50d450099da664bedd7dcc6ed40204ab0bb861a5",
+            .hash = "raylib_zig-6.0.0-KE8REDSmBQAbyUv_Fh71wgvhQSP2zsmVxtPRLzCgIXWK",
+        },
+        .zlua = .{
+            .url = "git+https://github.com/natecraddock/ziglua.git#8b2c14e0f9f89a9407dd7dd91752c7d8fd03cb62",
+            .hash = "zlua-0.1.0-hGRpC8yYBQAtI5hy60lb1vK9Tc7s-Ouu0aMFe2Kdc3_s",
+        },
+    },
+    .paths = .{
+        "build.zig",
+        "build.zig.zon",
+        "src",
+    },
+}
