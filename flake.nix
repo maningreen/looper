@@ -19,12 +19,10 @@
   };
 
   outputs = inputs: {
-    devShells = builtins.mapAttrs (system: pkgs: {
-      default = pkgs.mkShell {
-        packages = with pkgs; [
-          inputs.zig-flake.packages.${system}.default
-          inputs.zls.packages.${system}.default
-
+    devShells = builtins.mapAttrs (
+      system: pkgs:
+      let
+        dependencies = with pkgs; [
           libGL
 
           # X11 dependencies
@@ -35,7 +33,20 @@
           libxinerama
           libxrandr
         ];
-      };
-    }) inputs.nixpkgs.legacyPackages;
+      in
+      {
+        default = pkgs.mkShell {
+          packages = [
+            inputs.zig-flake.packages.${system}.default
+            inputs.zls.packages.${system}.default
+          ]
+          ++ dependencies;
+        };
+
+        minimal = pkgs.mkShell {
+          packages = dependencies;
+        };
+      }
+    ) inputs.nixpkgs.legacyPackages;
   };
 }

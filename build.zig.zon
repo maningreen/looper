@@ -5,8 +5,8 @@
     .minimum_zig_version = "0.16.0",
     .dependencies = .{
         .mangle = .{
-            .url = "git+https://github.com/maningreen/mangle.zig.git#10af8019671080c95af9eeb78cdccc21252eb1e0",
-            .hash = "mangle-0.0.1-McYoGvonAQA_ANw8URh_dXG34TnIhUun9YhhLfV8EU8b",
+            .url = "git+https://github.com/maningreen/mangle.zig#04e82b2ffb8c14fd3991def95bdcbb6c7f4b0b46",
+            .hash = "mangle-0.0.1-McYoGhllAQDvKVAMM7jxPVJCLDwEEdjcH8EvtxfJzDu3",
         },
         .raylib_zig = .{
             .url = "git+https://github.com/raylib-zig/raylib-zig.git#50d450099da664bedd7dcc6ed40204ab0bb861a5",

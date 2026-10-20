@@ -2,11 +2,11 @@
   "nodes": {
     "nixpkgs": {
       "locked": {
-        "lastModified": 1791487292,
-        "narHash": "sha256-6BIvCXtdLW4HQwsOGkgH444aB3vCbHypE9TA78ireh8=",
-        "rev": "8edc0c72e3a38faf5434e40d1f19431125fe4b30",
+        "lastModified": 1791966044,
+        "narHash": "sha256-UwKRZKua8BOagYl0cou05BHtu7F6XV62FD2Hb+f0QYs=",
+        "rev": "319e4cebef10cbb636c6ea392137b52ad105336a",
         "type": "tarball",
-        "url": "https://releases.nixos.org/nixpkgs/nixpkgs-26.11pre1088030.8edc0c72e3a3/nixexprs.tar.zst"
+        "url": "https://releases.nixos.org/nixpkgs/nixpkgs-26.11pre1092129.319e4cebef10/nixexprs.tar.zst"
       },
       "original": {
         "type": "tarball",
@@ -27,11 +27,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1791941911,
-        "narHash": "sha256-+I2jgLiKVpR1rPiXqoqAH5gjuy/YAm54fqG/aRKxvb4=",
+        "lastModified": 1791988543,
+        "narHash": "sha256-jQTgF5l8R4BUspS/Xg8jklFTwPw3p9pQ4o3l9B+2jLk=",
         "owner": "silversquirl",
         "repo": "zig-flake",
-        "rev": "c43e71051609f37d0facf1689d3bb79b3ff82f27",
+        "rev": "63789d87a441f18c052def7a86bdfc3d01d0a63b",
         "type": "github"
       },
       "original": {
@@ -50,11 +50,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1792017146,
-        "narHash": "sha256-mcvZhsaKBamwMv/Vb2PlOFsvaJEJi+s62I0TXE1Jimo=",
+        "lastModified": 1792095809,
+        "narHash": "sha256-3Jk4Vv24VAI/4sCTqVH4lela91ywlvcxmu7B0CEzxfc=",
         "owner": "zigtools",
         "repo": "zls",
-        "rev": "68d88cec805c2de8710f5e7002103ab490c99ce2",
+        "rev": "ff89747f9ee66ad1c255f555d14a7a423019b59a",
         "type": "github"
       },
       "original": {
