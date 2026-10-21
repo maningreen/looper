@@ -5,6 +5,7 @@ const rl = @import("raylib");
 
 const alias = @import("alias.zig");
 const Player = @import("player.zig");
+const border = @import("border.zig");
 
 pub const circle = struct {
     pub const requirements = mangle.system.Signature{
@@ -26,12 +27,59 @@ pub const circle = struct {
     }
 };
 
+pub const square = struct {
+    pub const requirements = mangle.system.Signature{
+        .fields = &.{
+            .{ .name = "position", .type = alias.Position },
+            .{ .name = "length", .type = alias.SquareDimensions },
+            .{ .name = "color", .type = rl.Color },
+            .{ .name = "rot", .type = alias.Rotation, .status = .optional },
+        },
+    };
+
+    pub fn receive(comptime T: type, value: *T, event: anytype, _: anytype) void {
+        switch (@TypeOf(event)) {
+            alias.Render => draw(value.*),
+            else => {},
+        }
+    }
+
+    fn draw(value: anytype) void {
+        const T = @TypeOf(value);
+        if (@hasField(T, "rot")) {
+            rl.drawRectanglePro(
+                .{
+                    .x = value.position.x,
+                    .y = value.position.y,
+                    .height = value.length.side,
+                    .width = value.length.side,
+                },
+                .zero(),
+                value.rot,
+                value.color,
+            );
+        } else {
+            rl.drawRectanglePro(
+                .{
+                    .x = value.position.x,
+                    .y = value.position.y,
+                    .height = value.length.side,
+                    .width = value.length.side,
+                },
+                .zero(),
+                0,
+                value.color,
+            );
+        }
+    }
+};
+
 pub const player = struct {
     const deltaTheta = std.math.pi * 2.0 / 3.0;
     const size = 50;
 
     pub const requirements = mangle.system.Signature.fromStruct(struct {
-        player: Player.Player,
+        flag: Player.PlayerFlag,
         position: alias.Position,
         color: rl.Color,
     });

@@ -4,7 +4,7 @@ const mangle = @import("mangle");
 const rl = @import("raylib");
 const alias = @import("alias.zig");
 
-pub var borderLength: f32 = 1000;
+pub var borderLength: f32 = 2000;
 
 pub const system = struct {
     pub const requirements = mangle.system.Signature.fromStruct(struct {
@@ -22,11 +22,32 @@ pub const system = struct {
 
 pub fn wrap(vector: rl.Vector2) rl.Vector2 {
     return .{
-        .x = vector.x - borderLength * @trunc(2 * (vector.x - borderLength / 2) / borderLength),
-        .y = vector.y - borderLength * @trunc(2 * (vector.y - borderLength / 2) / borderLength),
+        .x = (vector.x) - borderLength * @trunc(2 * (vector.x - borderLength / 2) / borderLength),
+        .y = (vector.y) - borderLength * @trunc(2 * (vector.y - borderLength / 2) / borderLength),
     };
 }
 
+pub fn getShortestPathTo(a: rl.Vector2, b: rl.Vector2) rl.Vector2 {
+    // from a -> b
+    var diff = b.subtract(a);
+    if (@abs(diff.x) > borderLength) {
+        diff.x += borderLength * -std.math.sign(diff.x);
+    }
+    if (@abs(diff.y) > borderLength) {
+        diff.x += borderLength * -std.math.sign(diff.x);
+    }
+    return diff;
+}
+
 pub fn render() void {
-    rl.drawRectangleLinesEx(.{.x = 0, .y = 0, .height = borderLength, .width = borderLength,}, 10, .ray_white);
+    rl.drawRectangleLinesEx(
+        .{
+            .x = 0,
+            .y = 0,
+            .height = borderLength,
+            .width = borderLength,
+        },
+        10,
+        .ray_white,
+    );
 }
