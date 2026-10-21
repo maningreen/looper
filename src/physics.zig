@@ -28,3 +28,19 @@ pub const friction = struct {
         value.v = value.v.subtract(value.v.scale(constant * info.delta));
     }
 };
+
+pub const rotation = struct {
+    pub const Rotation = struct { theta: f32 };
+    pub const AngularMomentum = struct { deltatheta: f32 };
+
+    pub const system = struct {
+        pub const requirements = mangle.system.Signature.fromStruct(struct {
+            theta: Rotation,
+            deltatheta: AngularMomentum,
+        });
+
+        pub fn process(comptime T: type, value: *T, info: anytype) void {
+            value.theta.theta += value.deltatheta.deltatheta * info.delta;
+        }
+    };
+};

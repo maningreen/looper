@@ -19,9 +19,6 @@ pub const Velocity = mangle.Alias(raylib.Vector2, "velocity");
 pub const Speed = mangle.Alias(f32, "speed");
 pub const Radius = mangle.Alias(f32, "radius");
 
-/// In radians
-pub const Rotation = mangle.Alias(f32, "theta");
-
 // conditions
 
 pub const Friction = struct {};

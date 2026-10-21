@@ -11,6 +11,7 @@ pub const alias = @import("alias.zig");
 pub const physics = @import("physics.zig");
 pub const border = @import("border.zig");
 pub const time = @import("time.zig");
+pub const color = @import("color.zig");
 
 pub const Player = @import("player.zig");
 pub const particle = @import("particle.zig");
@@ -31,9 +32,13 @@ pub const Registry = mangle.Registry(
 
         physics.velocity,
         physics.friction,
+        physics.rotation.system,
 
         time.elapsed,
         time.maxLifetime,
+
+        color.fade.system,
+        color.transparent.system,
 
         camera.system,
         border.system,
@@ -50,4 +55,5 @@ pub const Extra = struct {
         .target = .zero(),
         .zoom = 1,
     },
+    random: std.Random,
 };

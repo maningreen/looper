@@ -13,13 +13,13 @@ pub const system = struct {
     );
 
     pub fn process(comptime T: type, value: *T, info: anytype) !void {
-        if (value.handler.table.getVelocity) |getVel| {
-            const vel: raylib.Vector2 = getVel(T, value, info);
-            if (vel.subtract(value.velocity).lengthSqr() > 1) {
-                if (value.handler.table.onAccelerate) |accel|
-                    try accel(T, value, info);
+        if (value.handler.table.accelerate) |getVel| {
+            const accel: raylib.Vector2 = getVel(T, value, info);
+            if (accel.x != 0 or accel.y != 0) {
+                if (value.handler.table.onAccelerate) |onAccel|
+                    try onAccel(T, value, accel, info);
             }
-            value.velocity = vel;
+            value.velocity = value.velocity.add(accel);
         }
     }
 };
@@ -30,8 +30,8 @@ pub const Handler = struct {
     pub const Error = error{AccelerateError};
 
     pub const VTable = struct {
-        getVelocity: ?fn (comptime T: type, self: anytype, info: anytype) raylib.Vector2 = null,
+        accelerate: ?fn (comptime T: type, self: anytype, info: anytype) raylib.Vector2 = null,
         /// this will do nothing without a getVelocity != to `return .zero()`
-        onAccelerate: ?fn (comptime T: type, self: anytype, info: anytype) Error!void = null,
+        onAccelerate: ?fn (comptime T: type, self: anytype, accleration: raylib.Vector2, info: anytype) Error!void = null,
     };
 };

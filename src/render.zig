@@ -6,6 +6,7 @@ const rl = @import("raylib");
 const alias = @import("alias.zig");
 const Player = @import("player.zig");
 const border = @import("border.zig");
+const physics = @import("physics.zig");
 
 pub const circle = struct {
     pub const requirements = mangle.system.Signature{
@@ -33,7 +34,7 @@ pub const square = struct {
             .{ .name = "position", .type = alias.Position },
             .{ .name = "length", .type = alias.SquareDimensions },
             .{ .name = "color", .type = rl.Color },
-            .{ .name = "rot", .type = alias.Rotation, .status = .optional },
+            .{ .name = "rot", .type = physics.rotation.Rotation, .status = .optional },
         },
     };
 
@@ -54,8 +55,8 @@ pub const square = struct {
                     .height = value.length.side,
                     .width = value.length.side,
                 },
-                .zero(),
-                value.rot,
+                (rl.Vector2{ .x = value.length.side, .y = value.length.side }).scale(0.5),
+                value.rot.theta * std.math.deg_per_rad,
                 value.color,
             );
         } else {
@@ -66,7 +67,7 @@ pub const square = struct {
                     .height = value.length.side,
                     .width = value.length.side,
                 },
-                .zero(),
+                (rl.Vector2{ .x = value.length.side, .y = value.length.side }).scale(0.5),
                 0,
                 value.color,
             );

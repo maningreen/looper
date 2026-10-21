@@ -10,25 +10,28 @@ const render = @import("render.zig");
 const alias = @import("alias.zig");
 const physics = @import("physics.zig");
 const camera = @import("camera.zig");
+const time = @import("time.zig");
 
-pub const border = @import("border.zig");
+const border = @import("border.zig");
 
 const particles = @import("particle.zig");
-
-pub const PlayerFlag = struct {};
 
 const Player = @This();
 
 comptime handle: Input.Handler = .{ .table = table },
 comptime friction: alias.Friction = .{},
-comptime color: raylib.Color = raylib.Color.yellow,
 comptime player: PlayerFlag = .{},
 
+color: raylib.Color = raylib.Color.yellow,
 keymap: KeyMap = .{ .left = .s, .right = .f, .up = .e, .down = .d },
 position: alias.Position = mangle.alias(alias.Position, raylib.Vector2.init(30, 30)),
 velocity: alias.Velocity = mangle.alias(alias.Velocity, raylib.Vector2.zero()),
 speed: alias.Speed = mangle.alias(alias.Speed, 1250),
 cameraFollow: camera.Follow = mangle.alias(camera.Follow, true),
+
+particleManager: ParticleManager = .{
+    .time = .{ .elapsed = 0 },
+},
 
 pub const default = Player{};
 
@@ -43,24 +46,23 @@ pub fn init(gpa: std.mem.Allocator, io: std.Io) !Player {
 }
 
 const table = Input.Handler.VTable{
-    .getVelocity = getVelocity,
+    .accelerate = getAccel,
     .onAccelerate = spawnParticles,
 };
 
-fn getVelocity(comptime T: type, player: *T, info: anytype) raylib.Vector2 {
-    const deltaV = player.keymap.getInput().scale(player.speed * info.delta);
-    return player.velocity.add(deltaV);
+fn getAccel(comptime T: type, player: *T, info: anytype) raylib.Vector2 {
+    return player.keymap.getInput().scale(player.speed * info.delta);
 }
 
-fn spawnParticles(comptime T: type, player: *T, info: anytype) Input.Handler.Error!void {
-    const vel: raylib.Vector2 = player.velocity;
-    const particle = particles.Square{
-        .color = raylib.Color.yellow.fade(0.8),
-        .dimensions = .{ .side = 5 },
-        .velocity = mangle.alias(alias.Velocity, vel.negate()),
-        .position = mangle.alias(alias.Position, player.position),
-        .maxLifetime = .{ .max = 5}
-    };
+fn spawnParticles(comptime T: type, player: *T, a: raylib.Vector2, info: anytype) Input.Handler.Error!void {
+    const manager: *ParticleManager = &player.particleManager;
+    var particle = manager.createParticle(info.extra.random) orelse return;
+    particle.position.position = player.position;
+    particle.color = particle.color.fade(0.8);
+    const avgLen = particleRanges.averageRange(.length);
+    const velocityScalar: f32 = a.lengthSqr() * avgLen / (particle.dimensions.side);
+    const velocityAngle = std.math.atan2(-a.y, -a.x) + particleRanges.randomRange(particleRanges.getVelocityDeviation(a), info.extra.random);
+    particle.velocity.velocity = .{ .x = @cos(velocityAngle) * velocityScalar, .y = @sin(velocityAngle) * velocityScalar };
     info.appendDeferred(particle) catch return Input.Handler.Error.AccelerateError;
 }
 
@@ -97,11 +99,12 @@ const KeyMap = struct {
         return @as(f32, @floatFromInt(@intFromBool(raylib.isKeyDown(self.down)))) - @as(f32, @floatFromInt(@intFromBool(raylib.isKeyDown(self.up))));
     }
 
-    /// returns vector of
+    /// returns normalized vector of
     ///     x = -1 | 0 | 1
     ///     y = -1 | 0 | 1
+    ///     but normalized
     fn getInput(self: KeyMap) raylib.Vector2 {
-        return .{ .x = self.getHorizontalInput(), .y = self.getVerticalInput() };
+        return (raylib.Vector2{ .x = self.getHorizontalInput(), .y = self.getVerticalInput() }).normalize();
     }
 
     fn fromFile(gpa: std.mem.Allocator, io: std.Io, path: ?[]const u8) !KeyMap {
@@ -131,5 +134,58 @@ const KeyMap = struct {
             diagnostics.log(path orelse parse.localPath);
         }
         return parsed;
+    }
+};
+
+pub const PlayerFlag = struct {};
+
+pub const particleRanges = struct {
+    pub const theta = .{ 0.0, std.math.pi * 2 };
+    pub const deltaTheta = .{ -std.math.pi, std.math.pi };
+    pub const maxLifetime = .{ 2.0, 4.0 };
+    pub const length = .{ 10, 20 };
+
+    fn randomRange(range: struct { f32, f32 }, rand: std.Random) f32 {
+        const scalar = rand.float(f32);
+        return scalar * (range[1] - range[0]) + range[0];
+    }
+    fn randomFromRange(comptime value: std.meta.DeclEnum(@This()), rand: std.Random) f32 {
+        const range = @field(particleRanges, @tagName(value));
+        const scalar = rand.float(f32);
+        return scalar * (range[1] - range[0]) + range[0];
+    }
+
+    fn averageRange(comptime value: std.meta.DeclEnum(@This())) comptime_float {
+        const val = @field(particleRanges, @tagName(value));
+        return (val[0] + val[1]) / 2;
+    }
+
+    fn getVelocityDeviation(accelaration: raylib.Vector2) struct { f32, f32 } {
+        // this unit is in radians / (px / s^2)
+        // It is also doubled.
+        const scalar = 0.0125;
+        const deviation = std.math.sqrt(1 - std.math.pow(f32, scalar * accelaration.length() - 1, 2));
+        return .{ -deviation, deviation };
+    }
+};
+
+pub const ParticleManager = struct {
+    time: time.Elapsed,
+
+    pub const timeToSpawn = 1 / 30;
+
+    /// creates a particle at < 0, 0 > with velocity < 0, 0 >
+    pub fn createParticle(self: *ParticleManager, random: std.Random) ?particles.Square {
+        if (self.time.elapsed >= timeToSpawn) {
+            self.time.elapsed -= timeToSpawn;
+
+            return particles.Square{
+                .color = .yellow,
+                .dimensions = .{ .side = particleRanges.randomFromRange(.length, random) },
+                .theta = .{ .theta = particleRanges.randomFromRange(.theta, random) },
+                .deltaTheta = .{ .deltatheta = particleRanges.randomFromRange(.deltaTheta, random) },
+                .maxLifetime = .{ .max = particleRanges.randomFromRange(.maxLifetime, random) },
+            };
+        } else return null;
     }
 };

@@ -5,13 +5,17 @@ const game = @import("game");
 const raylib = game.raylib;
 
 pub fn main(init: std.process.Init) !void {
+    const rand = std.Random.IoSource{
+        .io = init.io
+    };
     var registry = game.Registry.init(init.io, init.gpa, game.Extra{
         .camera = .{
             .offset = .zero(),
             .rotation = 0,
             .target = .zero(),
             .zoom = 0.4,
-        }
+        },
+        .random = rand.interface(),
     });
     defer registry.deinit();
 
