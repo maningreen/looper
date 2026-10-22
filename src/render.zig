@@ -79,8 +79,10 @@ pub const player = struct {
     const deltaTheta = std.math.pi * 2.0 / 3.0;
     const size = 50;
 
+    pub const RenderFlag = struct {};
+
     pub const requirements = mangle.system.Signature.fromStruct(struct {
-        flag: Player.PlayerFlag,
+        flag: RenderFlag,
         position: alias.Position,
         color: rl.Color,
     });

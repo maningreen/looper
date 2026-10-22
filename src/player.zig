@@ -21,6 +21,7 @@ const Player = @This();
 comptime handle: Input.Handler = .{ .table = table },
 comptime friction: alias.Friction = .{},
 comptime player: PlayerFlag = .{},
+comptime renderPlayer: render.player.RenderFlag = .{},
 
 color: raylib.Color = raylib.Color.yellow,
 keymap: KeyMap = .{ .left = .s, .right = .f, .up = .e, .down = .d },
@@ -28,6 +29,8 @@ position: alias.Position = mangle.alias(alias.Position, raylib.Vector2.init(30, 
 velocity: alias.Velocity = mangle.alias(alias.Velocity, raylib.Vector2.zero()),
 speed: alias.Speed = mangle.alias(alias.Speed, 1250),
 cameraFollow: camera.Follow = mangle.alias(camera.Follow, true),
+
+dashManager: DashManager = .{},
 
 particleManager: ParticleManager = .{
     .time = .{ .elapsed = 0 },
@@ -43,6 +46,15 @@ pub fn init(gpa: std.mem.Allocator, io: std.Io) !Player {
     return Player{
         .keymap = keymap,
     };
+}
+
+pub fn deinit(comptime T: type, value: *T, info: anytype) void {
+    const keymap: KeyMap = mangle.flags.originalType(value.keymap);
+    const file = std.Io.Dir.cwd().createFile(info.io, KeyMap.parse.localPath, .{}) catch return;
+    var writeBuf: [128]u8 = undefined;
+    var writer = file.writer(info.io, writeBuf[0..]);
+    writer.interface.print("{}", .{keymap}) catch return;
+    writer.flush() catch return;
 }
 
 const table = Input.Handler.VTable{
@@ -69,8 +81,8 @@ fn spawnParticles(comptime T: type, player: *T, a: raylib.Vector2, info: anytype
 const KeyMap = struct {
     pub const parse = struct {
         pub const localPath: []const u8 = "resources/keymap.zig.zon";
-        /// 1 megabyte.
-        pub const maximum: usize = 1e6;
+        /// 1 kilobyte.
+        pub const maximum: usize = 1024;
     };
 
     const Key = raylib.KeyboardKey;
@@ -79,6 +91,8 @@ const KeyMap = struct {
     right: Key = .d,
     up: Key = .w,
     down: Key = .s,
+
+    dash: Key = .space,
 
     /// returns scalar -1 | 0 | 1
     fn getHorizontalInput(self: KeyMap) f32 {
@@ -172,7 +186,7 @@ pub const particleRanges = struct {
 pub const ParticleManager = struct {
     time: time.Elapsed,
 
-    pub const timeToSpawn = 1 / 30;
+    pub const timeToSpawn = 1.0 / 60.0;
 
     /// creates a particle at < 0, 0 > with velocity < 0, 0 >
     pub fn createParticle(self: *ParticleManager, random: std.Random) ?particles.Square {
@@ -188,4 +202,8 @@ pub const ParticleManager = struct {
             };
         } else return null;
     }
+};
+
+pub const DashManager = struct {
+    time: time.Elapsed = .{ .elapsed = 0 },
 };
