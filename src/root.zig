@@ -46,7 +46,10 @@ pub const Registry = mangle.Registry(
     Extra,
 );
 
+const pixelLength = 10;
+
 pub const Extra = struct {
+    pixelLength: u32 = 10,
     mousePosition: raylib.Vector2 = .zero(),
     windowDimensions: raylib.Vector2 = .zero(),
     camera: raylib.Camera2D = .{
@@ -55,5 +58,72 @@ pub const Extra = struct {
         .target = .zero(),
         .zoom = 1,
     },
+    renderCamera: raylib.Camera2D = .{
+        .rotation = 0,
+        .target = .zero(),
+        .offset = .zero(),
+        .zoom = 1.0 / @as(comptime_float, pixelLength),
+    },
     random: std.Random,
+
+    renderTexture: raylib.RenderTexture2D,
+    shader: raylib.Shader,
+
+    pub fn start(self: Extra) void {
+        raylib.beginDrawing();
+
+        self.renderTexture.begin();
+        self.renderCamera.begin();
+
+        raylib.clearBackground(.black);
+    }
+
+    pub fn end(self: Extra) void {
+        self.renderCamera.end();
+        self.renderTexture.end();
+
+        self.shader.activate();
+        self.camera.begin();
+
+        const renderCount: struct { i32, i32 } = .{
+            @divCeil(
+                @as(c_int, @ceil(self.windowDimensions.x / self.camera.zoom)),
+                self.renderTexture.texture.width * pixelLength,
+            ) + 1,
+            @divCeil(
+                @as(c_int, @ceil(self.windowDimensions.y / self.camera.zoom)),
+                self.renderTexture.texture.height * pixelLength,
+            ) + 1,
+        };
+
+        const drawOffset: struct { u1, u1 } = .{
+            @intFromBool(self.camera.target.x > border.borderLength / 2),
+            @intFromBool(self.camera.target.y > border.borderLength / 2),
+        };
+
+        self.renderTexture.texture.drawPro(
+            .{
+                .x = 0,
+                .y = 0,
+                .height = @floatFromInt(-self.renderTexture.texture.height * renderCount[1]),
+                .width = @floatFromInt(self.renderTexture.texture.width * renderCount[0]),
+            },
+            .{
+                .x = 0,
+                .y = 0,
+                .height = @as(f32, @floatFromInt(self.renderTexture.texture.width * pixelLength * renderCount[1])),
+                .width = @as(f32, @floatFromInt(self.renderTexture.texture.height * pixelLength * renderCount[0])),
+            },
+            .{
+                .x = @as(f32, @floatFromInt(self.renderTexture.texture.width * pixelLength * (@divTrunc(renderCount[0], 2) - drawOffset[0]))),
+                .y = @as(f32, @floatFromInt(self.renderTexture.texture.height * pixelLength * (@divTrunc(renderCount[1], 2) - drawOffset[1]))),
+            },
+            0,
+            .white,
+        );
+
+        self.camera.end();
+        self.shader.deactivate();
+        raylib.endDrawing();
+    }
 };

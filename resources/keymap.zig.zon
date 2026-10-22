@@ -1,6 +1,6 @@
 .{
-    .left = .s,
-    .right = .f,
-    .up = .e,
-    .down = .d,
+    .left = .a,
+    .right = .d,
+    .up = .w,
+    .down = .s,
 }
