@@ -86,20 +86,27 @@ pub const Extra = struct {
         self.camera.begin();
 
         const renderCount: struct { i32, i32 } = .{
-            @divCeil(
-                @as(c_int, @ceil(self.windowDimensions.x / self.camera.zoom)),
-                self.renderTexture.texture.width * pixelLength,
-            ) + 1,
-            @divCeil(
-                @as(c_int, @ceil(self.windowDimensions.y / self.camera.zoom)),
-                self.renderTexture.texture.height * pixelLength,
-            ) + 1,
+            @max(
+                @divCeil(
+                    @as(c_int, @ceil(self.windowDimensions.x / self.camera.zoom)),
+                    self.renderTexture.texture.width * pixelLength,
+                ) + 1,
+                3,
+            ),
+            @max(
+                @divCeil(
+                    @as(c_int, @ceil(self.windowDimensions.y / self.camera.zoom)),
+                    self.renderTexture.texture.height * pixelLength,
+                ) + 1,
+                3,
+            ),
         };
 
         const drawOffset: struct { u1, u1 } = .{
             @intFromBool(self.camera.target.x > border.borderLength / 2),
             @intFromBool(self.camera.target.y > border.borderLength / 2),
         };
+        std.log.debug("{}, {}", .{renderCount, drawOffset});
 
         self.renderTexture.texture.drawPro(
             .{
