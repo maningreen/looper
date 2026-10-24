@@ -54,6 +54,7 @@ pub fn build(b: *std.Build) void {
                 .{ .name = "game", .module = mod },
             },
         }),
+        .use_llvm = true,
     });
 
     b.installArtifact(exe);
