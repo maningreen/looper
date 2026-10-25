@@ -2,36 +2,34 @@ const std = @import("std");
 const mangle = @import("mangle");
 const raylib = @import("raylib");
 
-const alias = @import("alias.zig");
-
 pub const system = struct {
-    pub const requirements = mangle.system.Signature.fromStruct(
-        struct {
-            handler: Handler,
-            velocity: alias.Velocity,
+    pub const requirements = mangle.system.Signature{
+        .fields = &.{
+            .{ .name = "bindings", .schema = .{ .array = Binding } },
+            .{ .name = "callbacks", .schema = .{ .array = Callback } },
         },
-    );
+    };
 
-    pub fn process(comptime T: type, value: *T, info: anytype) !void {
-        if (value.handler.table.accelerate) |getVel| {
-            const accel: raylib.Vector2 = getVel(T, value, info);
-            if (accel.x != 0 or accel.y != 0) {
-                if (value.handler.table.onAccelerate) |onAccel|
-                    try onAccel(T, value, accel, info);
+    pub fn receive(comptime T: type, value: *T, event: anytype, info: anytype) !void {
+        switch (@TypeOf(event)) {
+            raylib.KeyboardKey => try recieveKey(T, value, event, info),
+            else => {},
+        }
+    }
+
+    pub fn recieveKey(comptime T: type, value: *T, event: raylib.KeyboardKey, info: anytype) !void {
+        inline for (value.bindings, value.callbacks) |bind, call| {
+            switch (bind) {
+                .key => |key| if (event == key) try call(T, value, info),
+                else => {},
             }
-            value.velocity = value.velocity.add(accel);
         }
     }
 };
 
-pub const Handler = struct {
-    table: VTable,
-
-    pub const Error = error{AccelerateError};
-
-    pub const VTable = struct {
-        accelerate: ?fn (comptime T: type, self: anytype, info: anytype) raylib.Vector2 = null,
-        /// this will do nothing without a getVelocity != to `return .zero()`
-        onAccelerate: ?fn (comptime T: type, self: anytype, accleration: raylib.Vector2, info: anytype) Error!void = null,
-    };
+pub const Binding = union(enum) {
+    key: raylib.KeyboardKey,
+    mouse: raylib.MouseButton,
 };
+pub const Callback = fn (comptime T: type, value: anytype, info: anytype) Error!void;
+pub const Error = error{KeymapError};

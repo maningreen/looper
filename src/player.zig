@@ -1,209 +1,244 @@
 const std = @import("std");
 const Io = std.Io;
 
-pub const mangle = @import("mangle");
-pub const raylib = @import("raylib");
-pub const raygui = @import("raygui");
+const mangle = @import("mangle");
+const raylib = @import("raylib");
+const raygui = @import("raygui");
 
-const Input = @import("input.zig");
+const accelerate = @import("accelerate.zig");
+const input = @import("input.zig");
 const render = @import("render.zig");
 const alias = @import("alias.zig");
 const physics = @import("physics.zig");
 const camera = @import("camera.zig");
 const time = @import("time.zig");
-
+const dash = @import("dash.zig");
 const border = @import("border.zig");
 
-const particles = @import("particle.zig");
+const VectorMap = @import("player/vectormap.zig");
+const particle = @import("player/particle.zig");
 
 const Player = @This();
 
-comptime handle: Input.Handler = .{ .table = table },
-comptime friction: alias.Friction = .{},
+comptime accelerator: accelerate.Manager = .{
+    .table = .{
+        .accelerate = getAccel,
+        .onAccelerate = spawnParticles,
+    },
+},
 comptime player: PlayerFlag = .{},
 comptime renderPlayer: render.player.RenderFlag = .{},
+comptime friction: alias.Friction = .{},
 
 color: raylib.Color = raylib.Color.yellow,
-keymap: KeyMap = .{ .left = .s, .right = .f, .up = .e, .down = .d },
-position: alias.Position = mangle.alias(alias.Position, raylib.Vector2.init(30, 30)),
+vectorMap: VectorMap = .{ .left = .s, .right = .f, .up = .e, .down = .d },
+position: alias.Position = mangle.alias(alias.Position, raylib.Vector2.init(border.defaultLength / 2, border.defaultLength / 2)),
 velocity: alias.Velocity = mangle.alias(alias.Velocity, raylib.Vector2.zero()),
 speed: alias.Speed = mangle.alias(alias.Speed, 1250),
+dashControl: alias.Speed = mangle.alias(alias.Speed, 2000),
+
 cameraFollow: camera.Follow = mangle.alias(camera.Follow, true),
+keybinds: mangle.Compose(Bindings) = .{},
 
-dashManager: DashManager = .{},
-
-particleManager: ParticleManager = .{
-    .time = .{ .elapsed = 0 },
-},
+dashManager: dash.Manager = .{},
+particleManager: particle.Manager = .{ .time = .{ .elapsed = 0 } },
+resource: Resource = .{},
 
 pub const default = Player{};
+pub const PlayerFlag = struct {};
+
+const Resource = struct {
+    time: time.Elapsed = .{ .elapsed = 0 },
+    offset: f32 = 10,
+
+    /// will only return [0..3]
+    fn getCount(self: Resource) u2 {
+        return @trunc(@min(3, self.time.elapsed));
+    }
+
+    fn canUse(self: Resource) bool {
+        return self.time.elapsed >= 1;
+    }
+
+    fn use(self: *Resource) bool {
+        if (self.time.elapsed >= 1) {
+            self.time.elapsed -= 1;
+            return true;
+        }
+        return false;
+    }
+};
+
+const Bindings = struct {
+    keys: [2]input.Binding = .{
+        .{ .key = .space },
+        .{ .key = .left },
+    },
+    comptime callbacks: [2]input.Callback = [_]input.Callback{
+        callChild(null, .beginDash, .systemFunction, null),
+        callChild(null, .fire, .systemFunction, .{ .set = input.Error, .@"error" = .KeymapError }),
+    },
+};
 
 pub fn init(gpa: std.mem.Allocator, io: std.Io) !Player {
-    const keymap = KeyMap.fromFile(gpa, io, null) catch |err| switch (err) {
+    const vectormap = VectorMap.fromFile(gpa, io, null) catch |err| switch (err) {
         error.OutOfMemory => return error.OutOfMemory,
-        else => KeyMap{},
+        else => VectorMap{},
     };
     return Player{
-        .keymap = keymap,
+        .vectorMap = vectormap,
     };
 }
 
 pub fn deinit(comptime T: type, value: *T, info: anytype) void {
-    const keymap: KeyMap = mangle.flags.originalType(value.keymap);
-    const file = std.Io.Dir.cwd().createFile(info.io, KeyMap.parse.localPath, .{}) catch return;
+    const keymap: VectorMap = mangle.flags.originalType(value.vectorMap);
+    const file = std.Io.Dir.cwd().createFile(info.io, VectorMap.parse.localPath, .{}) catch return;
     var writeBuf: [128]u8 = undefined;
     var writer = file.writer(info.io, writeBuf[0..]);
-    writer.interface.print("{}", .{keymap}) catch return;
+    std.zon.stringify.serialize(VectorMap.parse.to(keymap), .{}, &writer.interface) catch return;
     writer.flush() catch return;
 }
 
-const table = Input.Handler.VTable{
-    .accelerate = getAccel,
-    .onAccelerate = spawnParticles,
-};
-
 fn getAccel(comptime T: type, player: *T, info: anytype) raylib.Vector2 {
-    return player.keymap.getInput().scale(player.speed * info.delta);
+    const acc: raylib.Vector2 = player.vectorMap.getInput();
+    if (!player.dashManager.isDashing) {
+        return getInputAccel(T, player, info);
+    } else {
+        return if (acc.x == 0 and acc.y == 0)
+            player.velocity.normalize().scale(player.dashControl * info.delta)
+        else
+            acc.scale(player.dashControl * info.delta);
+    }
 }
 
-fn spawnParticles(comptime T: type, player: *T, a: raylib.Vector2, info: anytype) Input.Handler.Error!void {
-    const manager: *ParticleManager = &player.particleManager;
-    var particle = manager.createParticle(info.extra.random) orelse return;
-    particle.position.position = player.position;
-    particle.color = particle.color.fade(0.8);
-    const avgLen = particleRanges.averageRange(.length);
-    const velocityScalar: f32 = a.lengthSqr() * avgLen / (particle.dimensions.side);
-    const velocityAngle = std.math.atan2(-a.y, -a.x) + particleRanges.randomRange(particleRanges.getVelocityDeviation(a), info.extra.random);
-    particle.velocity.velocity = .{ .x = @cos(velocityAngle) * velocityScalar, .y = @sin(velocityAngle) * velocityScalar };
-    info.appendDeferred(particle) catch return Input.Handler.Error.AccelerateError;
+fn getInputAccel(comptime T: type, player: *T, info: anytype) raylib.Vector2 {
+    return player.vectorMap.getInput().scale(player.speed * info.delta);
 }
 
-const KeyMap = struct {
-    pub const parse = struct {
-        pub const localPath: []const u8 = "resources/keymap.zig.zon";
-        /// 1 kilobyte.
-        pub const maximum: usize = 1024;
+fn spawnParticles(comptime T: type, player: *T, a: raylib.Vector2, info: anytype) accelerate.Manager.Error!void {
+    const manager: *particle.Manager = &player.particleManager;
+    var prt = manager.createParticle(info.extra.random) orelse return;
+    prt.position.position = player.position;
+    prt.color = prt.color.fade(0.8);
+    const velocityScalar: f32 = a.length() / info.delta;
+    const velocityAngle = std.math.atan2(-a.y / velocityScalar, -a.x / velocityScalar) + particle.ranges.randomRange(particle.ranges.getVelocityDeviation(velocityScalar), info.extra.random);
+    prt.velocity.velocity = .{ .x = @cos(velocityAngle) * velocityScalar, .y = @sin(velocityAngle) * velocityScalar };
+    info.appendDeferred(prt) catch return accelerate.Manager.Error.AccelerateError;
+}
+
+/// Doesn't do anything if `!value.resource.canUse()`
+pub fn beginDash(comptime T: type, value: *T, info: anytype) void {
+    if (!value.resource.canUse()) return;
+    value.dashManager.beginDash();
+    _ = value.resource.use();
+    const accel = getInputAccel(T, value, info);
+    if (accel.lengthSqr() > 1)
+        value.velocity = accel;
+}
+
+pub fn fire(comptime T: type, value: *T, info: anytype) !void {
+    _ = .{ value, info };
+    std.log.debug("dsakfjasf", .{});
+}
+
+/// generates a callback
+fn callChild(comptime childInfo: ?struct {
+    T: type,
+    field: @EnumLiteral(),
+}, comptime function: @EnumLiteral(), comptime args: enum {
+    selfPtr,
+    selfConst,
+    systemFunction,
+}, comptime @"error": ?struct {
+    set: type,
+    @"error": @EnumLiteral(),
+}) input.Callback {
+    const T = if (childInfo) |v| v.T else Player;
+    const f = comptime @field(T, @tagName(function));
+    const isError = comptime if (@typeInfo(@TypeOf(f)).@"fn".return_type) |v| @typeInfo(v) == .error_union else false;
+    const errorSet = comptime .{
+        .set = if (@"error") |e|
+            e.set
+        else if (@typeInfo(@TypeOf(f)).@"fn".return_type) |r|
+            if (@typeInfo(r) == .error_union)
+                @typeInfo(r).error_union.error_set,
+        .particular = if (@"error") |e| @field(e.set, @tagName(e.@"error")) else null,
     };
-
-    const Key = raylib.KeyboardKey;
-
-    left: Key = .a,
-    right: Key = .d,
-    up: Key = .w,
-    down: Key = .s,
-
-    dash: Key = .space,
-
-    /// returns scalar -1 | 0 | 1
-    fn getHorizontalInput(self: KeyMap) f32 {
-        return @as(
-            f32,
-            @floatFromInt(@intFromBool(raylib.isKeyDown(
-                self.right,
-            ))),
-        ) -
-            @as(f32, @floatFromInt(@intFromBool(
-                raylib.isKeyDown(
-                    self.left,
-                ),
-            )));
-    }
-    /// returns scalar -1 | 0 | 1
-    fn getVerticalInput(self: KeyMap) f32 {
-        return @as(f32, @floatFromInt(@intFromBool(raylib.isKeyDown(self.down)))) - @as(f32, @floatFromInt(@intFromBool(raylib.isKeyDown(self.up))));
-    }
-
-    /// returns normalized vector of
-    ///     x = -1 | 0 | 1
-    ///     y = -1 | 0 | 1
-    ///     but normalized
-    fn getInput(self: KeyMap) raylib.Vector2 {
-        return (raylib.Vector2{ .x = self.getHorizontalInput(), .y = self.getVerticalInput() }).normalize();
-    }
-
-    fn fromFile(gpa: std.mem.Allocator, io: std.Io, path: ?[]const u8) !KeyMap {
-        const file = try std.Io.Dir.cwd().openFile(io, path orelse parse.localPath, .{ .mode = .read_only });
-        defer file.close(io);
-
-        var readBuf: [1028]u8 = undefined;
-        var reader = file.reader(io, readBuf[0..]);
-
-        const source = try reader.interface.allocRemainingAlignedSentinel(gpa, .limited(parse.maximum), .@"1", 0);
-        defer gpa.free(source);
-
-        var diagnostics = std.zon.parse.Diagnostics{
-            .errors = &.{},
-        };
-        const parsed = std.zon.parse.fromSliceNoAlloc(
-            KeyMap,
-            .{
-                .arena = .failing,
-                .diagnostics = &diagnostics,
-                .gpa = gpa,
-                .ignore_unknown_fields = true,
-                .source = source,
+    const call = switch (args) {
+        .selfConst => if (comptime isError)
+            struct {
+                fn call(comptime U: type, value: *U, _: anytype) errorSet.set!void {
+                    if (childInfo) |info| {
+                        f(@field(value, @tagName(info.field))) catch |e|
+                            if (comptime errorSet.particular) |r|
+                                return r
+                            else
+                                return e;
+                    } else unreachable;
+                }
+            }
+        else
+            struct {
+                fn call(comptime U: type, value: *U, _: anytype) errorSet.set!void {
+                    if (childInfo) |info| {
+                        f(@field(value, @tagName(info.field)));
+                    } else unreachable;
+                }
             },
-        );
-        if (diagnostics.errors.len > 0) {
-            diagnostics.log(path orelse parse.localPath);
-        }
-        return parsed;
-    }
-};
-
-pub const PlayerFlag = struct {};
-
-pub const particleRanges = struct {
-    pub const theta = .{ 0.0, std.math.pi * 2 };
-    pub const deltaTheta = .{ -std.math.pi, std.math.pi };
-    pub const maxLifetime = .{ 2.0, 4.0 };
-    pub const length = .{ 10, 20 };
-
-    fn randomRange(range: struct { f32, f32 }, rand: std.Random) f32 {
-        const scalar = rand.float(f32);
-        return scalar * (range[1] - range[0]) + range[0];
-    }
-    fn randomFromRange(comptime value: std.meta.DeclEnum(@This()), rand: std.Random) f32 {
-        const range = @field(particleRanges, @tagName(value));
-        const scalar = rand.float(f32);
-        return scalar * (range[1] - range[0]) + range[0];
-    }
-
-    fn averageRange(comptime value: std.meta.DeclEnum(@This())) comptime_float {
-        const val = @field(particleRanges, @tagName(value));
-        return (val[0] + val[1]) / 2;
-    }
-
-    fn getVelocityDeviation(accelaration: raylib.Vector2) struct { f32, f32 } {
-        // this unit is in radians / (px / s^2)
-        // It is also doubled.
-        const scalar = 0.0125;
-        const deviation = std.math.sqrt(1 - std.math.pow(f32, scalar * accelaration.length() - 1, 2));
-        return .{ -deviation, deviation };
-    }
-};
-
-pub const ParticleManager = struct {
-    time: time.Elapsed,
-
-    pub const timeToSpawn = 1.0 / 60.0;
-
-    /// creates a particle at < 0, 0 > with velocity < 0, 0 >
-    pub fn createParticle(self: *ParticleManager, random: std.Random) ?particles.Square {
-        if (self.time.elapsed >= timeToSpawn) {
-            self.time.elapsed -= timeToSpawn;
-
-            return particles.Square{
-                .color = .yellow,
-                .dimensions = .{ .side = particleRanges.randomFromRange(.length, random) },
-                .theta = .{ .theta = particleRanges.randomFromRange(.theta, random) },
-                .deltaTheta = .{ .deltatheta = particleRanges.randomFromRange(.deltaTheta, random) },
-                .maxLifetime = .{ .max = particleRanges.randomFromRange(.maxLifetime, random) },
-            };
-        } else return null;
-    }
-};
-
-pub const DashManager = struct {
-    time: time.Elapsed = .{ .elapsed = 0 },
-};
+        .selfPtr => if (comptime isError)
+            struct {
+                fn call(comptime U: type, value: *U, _: anytype) errorSet.set!void {
+                    if (childInfo) |info| {
+                        f(&@field(value, @tagName(info.field))) catch |e|
+                            if (comptime errorSet.particular) |r|
+                                return r
+                            else
+                                return e;
+                    } else {
+                        f(value) catch |e|
+                            if (comptime errorSet.particular) |r|
+                                return r
+                            else
+                                return e;
+                    }
+                }
+            }
+        else
+            struct {
+                fn call(comptime U: type, value: *U, _: anytype) errorSet.set!void {
+                    if (childInfo) |info| {
+                        f(&@field(value, @tagName(info.field)));
+                    } else unreachable;
+                }
+            },
+        .systemFunction => if (comptime isError)
+            struct {
+                fn call(comptime U: type, value: *U, reg: anytype) errorSet.set!void {
+                    if (childInfo) |info| {
+                        f(info.T, &@field(value, @tagName(info.field)), reg) catch |e|
+                            if (comptime errorSet.particular) |r|
+                                return r
+                            else
+                                return e;
+                    } else {
+                        f(U, value, reg) catch |e|
+                            if (comptime errorSet.particular) |r|
+                                return r
+                            else
+                                return e;
+                    }
+                }
+            }
+        else
+            struct {
+                fn call(comptime U: type, value: *U, reg: anytype) input.Error!void {
+                    if (childInfo) |info| {
+                        f(U, &@field(value, @tagName(info.field)), reg);
+                    } else {
+                        f(U, value, reg);
+                    }
+                }
+            },
+    };
+    return call.call;
+}

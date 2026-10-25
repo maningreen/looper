@@ -22,7 +22,7 @@
     devShells = builtins.mapAttrs (
       system: pkgs:
       let
-        dependencies = with pkgs; [
+        libraries = with pkgs; [
           libGL
 
           # X11 dependencies
@@ -40,11 +40,11 @@
             inputs.zig-flake.packages.${system}.default
             inputs.zls.packages.${system}.default
           ]
-          ++ dependencies;
+          ++ libraries;
         };
 
         minimal = pkgs.mkShell {
-          packages = dependencies;
+          packages = libraries;
         };
       }
     ) inputs.nixpkgs.legacyPackages;

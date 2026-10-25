@@ -21,13 +21,13 @@ pub const system = struct {
     pub fn process(comptime T: type, value: *T, info: anytype) void {
         const cam: *rl.Camera2D = &info.extra.camera;
         if (value.shouldFollow) {
-            if (@abs(value.pos.x - cam.target.x) >= border.borderLength / 2) {
+            if (@abs(value.pos.x - cam.target.x) >= border.length / 2) {
                 const sign = std.math.sign(value.pos.x - cam.target.x);
-                cam.target.x += sign * border.borderLength;
+                cam.target.x += sign * border.length;
             }
-            if (@abs(value.pos.y - cam.target.y) >= border.borderLength / 2) {
+            if (@abs(value.pos.y - cam.target.y) >= border.length / 2) {
                 const sign = std.math.sign(value.pos.y - cam.target.y);
-                cam.target.y += sign * border.borderLength;
+                cam.target.y += sign * border.length;
             }
             cam.target = cam.target.lerp(value.pos, lerpRate * info.delta);
         }

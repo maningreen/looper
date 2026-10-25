@@ -5,13 +5,15 @@ pub const mangle = @import("mangle");
 pub const raylib = @import("raylib");
 pub const raygui = @import("raygui");
 
-pub const Input = @import("input.zig");
+pub const input = @import("input.zig");
+pub const accelerate = @import("accelerate.zig");
 pub const render = @import("render.zig");
 pub const alias = @import("alias.zig");
 pub const physics = @import("physics.zig");
 pub const border = @import("border.zig");
 pub const time = @import("time.zig");
 pub const color = @import("color.zig");
+pub const dash = @import("dash.zig");
 
 pub const Player = @import("player.zig");
 pub const particle = @import("particle.zig");
@@ -24,7 +26,11 @@ pub const Registry = mangle.Registry(
         particle.Square,
     },
     &.{
-        Input.system,
+        input.system,
+
+        accelerate.system,
+
+        dash.system,
 
         render.circle,
         render.player,

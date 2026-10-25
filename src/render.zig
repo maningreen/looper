@@ -11,9 +11,9 @@ const physics = @import("physics.zig");
 pub const circle = struct {
     pub const requirements = mangle.system.Signature{
         .fields = &.{
-            .{ .name = "color", .type = rl.Color },
-            .{ .name = "radius", .type = alias.Radius },
-            .{ .name = "pos", .type = alias.Position },
+            .{ .name = "color", .schema = .{ .simple = rl.Color } },
+            .{ .name = "radius", .schema = .{ .simple = alias.Radius } },
+            .{ .name = "pos", .schema = .{ .simple = alias.Position } },
         },
     };
     pub fn receive(comptime T: type, value: *T, event: anytype, _: anytype) void {
@@ -31,10 +31,10 @@ pub const circle = struct {
 pub const square = struct {
     pub const requirements = mangle.system.Signature{
         .fields = &.{
-            .{ .name = "position", .type = alias.Position },
-            .{ .name = "length", .type = alias.SquareDimensions },
-            .{ .name = "color", .type = rl.Color },
-            .{ .name = "rot", .type = physics.rotation.Rotation, .status = .optional },
+            .{ .name = "position", .schema = .{ .simple = alias.Position } },
+            .{ .name = "length", .schema = .{ .simple = alias.SquareDimensions } },
+            .{ .name = "color", .schema = .{ .simple = rl.Color } },
+            .{ .name = "rot", .schema = .{ .simple = physics.rotation.Rotation }, .status = .optional },
         },
     };
 

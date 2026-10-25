@@ -5,7 +5,6 @@ const game = @import("game");
 const raylib = game.raylib;
 
 pub fn main(init: std.process.Init) !void {
-
     raylib.setTraceLogLevel(.warning);
     raylib.initWindow(1920 * 0.9, 1080 * 0.9, "hell");
     defer raylib.closeWindow();
@@ -14,15 +13,18 @@ pub fn main(init: std.process.Init) !void {
     defer shader.unload();
 
     const pixelLength = 10;
-    const renderTexture = try raylib.loadRenderTexture(@trunc(game.border.borderLength / pixelLength), @trunc(game.border.borderLength / pixelLength));
+    const renderTexture = try raylib.loadRenderTexture(
+        @trunc(game.border.length / pixelLength),
+        @trunc(game.border.length / pixelLength),
+    );
     defer renderTexture.unload();
 
     const rand = std.Random.IoSource{ .io = init.io };
     var registry = game.Registry.init(init.io, init.gpa, game.Extra{
         .camera = .{
             .offset = .zero(),
-            .rotation = 0,
             .target = .zero(),
+            .rotation = 0,
             .zoom = 0.4,
         },
         .random = rand.interface(),
@@ -42,6 +44,11 @@ pub fn main(init: std.process.Init) !void {
             .x = @floatFromInt(raylib.getScreenWidth()),
             .y = @floatFromInt(raylib.getScreenHeight()),
         };
+        {
+            var key = raylib.getKeyPressed();
+            while (key != .null) : (key = raylib.getKeyPressed())
+                try registry.emit(key);
+        }
 
         try registry.process(raylib.getFrameTime());
 
