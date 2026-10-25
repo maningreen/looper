@@ -76,41 +76,87 @@ pub const square = struct {
 };
 
 pub const player = struct {
-    const deltaTheta = std.math.pi * 2.0 / 3.0;
-    const size = 50;
+    pub const size = 50;
+    pub const body = struct {
+        const deltaTheta = std.math.pi * 2.0 / 3.0;
 
-    pub const RenderFlag = struct {};
+        pub const RenderFlag = struct {};
 
-    pub const requirements = mangle.system.Signature.fromStruct(struct {
-        flag: RenderFlag,
-        position: alias.Position,
-        color: rl.Color,
-    });
+        pub const requirements = mangle.system.Signature.fromStruct(struct {
+            flag: RenderFlag,
+            position: alias.Position,
+            color: rl.Color,
+        });
 
-    pub fn receive(comptime T: type, value: *T, event: anytype, info: anytype) void {
-        switch (@TypeOf(event)) {
-            alias.Render => drawPlayer(value, info),
-            else => {},
+        pub fn receive(comptime T: type, value: *T, event: anytype, info: anytype) void {
+            switch (@TypeOf(event)) {
+                alias.Render => drawPlayer(value, info),
+                else => {},
+            }
         }
-    }
 
-    fn drawPlayer(value: anytype, info: anytype) void {
-        const mousePosition = info.extra.mousePosition;
+        fn drawPlayer(value: anytype, info: anytype) void {
+            const mousePosition = info.extra.mousePosition;
 
-        const diff: rl.Vector2 = mousePosition.subtract(value.position);
-        const farVetrex = diff.normalize().scale(size).add(value.position);
+            const diff: rl.Vector2 = mousePosition.subtract(value.position);
+            const farVetrex = diff.normalize().scale(size).add(value.position);
 
-        const theta = std.math.atan2(diff.y, diff.x);
-        const length = 40;
+            const theta = std.math.atan2(diff.y, diff.x);
+            const length = 40;
 
-        const drawA = theta + deltaTheta;
-        const sideVertexA = rl.Vector2.init(length * std.math.cos(drawA), length * std.math.sin(drawA));
-        rl.drawTriangle(farVetrex, value.position, sideVertexA.add(value.position), value.color);
+            const drawA = theta + deltaTheta;
+            const sideVertexA = rl.Vector2.init(length * std.math.cos(drawA), length * std.math.sin(drawA));
+            rl.drawTriangle(farVetrex, value.position, sideVertexA.add(value.position), value.color);
 
-        const drawB = theta - deltaTheta;
-        const sideVertexB = rl.Vector2.init(length * std.math.cos(drawB), length * std.math.sin(drawB));
-        rl.drawTriangle(value.position, farVetrex, sideVertexB.add(value.position), value.color);
+            const drawB = theta - deltaTheta;
+            const sideVertexB = rl.Vector2.init(length * std.math.cos(drawB), length * std.math.sin(drawB));
+            rl.drawTriangle(value.position, farVetrex, sideVertexB.add(value.position), value.color);
 
-        rl.drawCircleV(value.position, 5, .white);
-    }
+            rl.drawCircleV(value.position, 5, .white);
+        }
+    };
+
+    pub const resources = struct {
+        pub const blockSize = 10;
+        pub const dimensions: rl.Vector2 = .{ .x = 10, .y = 2 * size };
+        pub const relativeOffset: rl.Vector2 = .{ .x = size * 1.5, .y = -size * 1 };
+
+        pub const requirements = mangle.system.Signature.fromStruct(struct {
+            resource: Player.Resource,
+            color: rl.Color,
+            position: alias.Position,
+        });
+
+        pub fn receive(comptime T: type, value: *T, event: anytype, info: anytype) void {
+            switch (@TypeOf(event)) {
+                alias.Render => draw(value, info),
+                else => {},
+            }
+        }
+
+        fn draw(value: anytype, _: anytype) void {
+            const resource: *Player.Resource = &value.resource;
+            const position: rl.Vector2 = value.position;
+            const blockingOffset = size * 2 / @as(f32, @floatFromInt(resource.count));
+            const scalar = resource.getScalar();
+            const drawPosition = position.add(relativeOffset);
+            const drawRect: rl.Rectangle = .{
+                .x = drawPosition.x,
+                .y = drawPosition.y,
+                .height = dimensions.y * scalar,
+                .width = dimensions.x,
+            };
+            rl.drawRectangleRec(drawRect, value.color);
+            for (1..resource.count + 1) |i| {
+                rl.drawRectangleV(
+                    drawPosition.add(.{
+                        .x = 0,
+                        .y = @as(f32, @floatFromInt(i)) * blockingOffset,
+                    }),
+                    .{ .x = blockSize, .y = blockSize },
+                    .white,
+                );
+            }
+        }
+    };
 };

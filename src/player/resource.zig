@@ -1,24 +1,36 @@
 const Elapsed = @import("../time.zig").Elapsed;
 const mangle = @import("mangle");
+const render = @import("../render.zig");
 
-const Manager = struct {
+pub const Manager = struct {
     time: Elapsed = .{ .elapsed = 0 },
-    offset: f32 = 10,
+    count: u32,
 
-    /// will only return [0..3]
-    fn getCount(self: Manager) u2 {
-        return @trunc(@min(3, self.time.elapsed));
+    /// returns [0..count]
+    pub fn getLevel(self: Manager) f32 {
+        return @min(self.count, self.time.elapsed);
     }
 
-    fn canUse(self: Manager) bool {
+    /// will only return [0..count]
+    pub fn getCount(self: Manager) u2 {
+        return @trunc(@min(self.count, self.time.elapsed));
+    }
+
+    pub fn canUse(self: Manager) bool {
         return self.time.elapsed >= 1;
     }
 
-    fn use(self: *Manager) bool {
+    pub fn use(self: *Manager) bool {
+        self.time.elapsed = @min(self.time.elapsed, @as(f32, @floatFromInt(self.count)));
         if (self.time.elapsed >= 1) {
             self.time.elapsed -= 1;
             return true;
         }
         return false;
+    }
+
+    /// returns [0..1], based off of the proportion of time to count.
+    pub fn getScalar(self: Manager) f32 {
+        return @min(1, self.time.elapsed / @as(f32, @floatFromInt(self.count)));
     }
 };

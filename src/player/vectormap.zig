@@ -4,6 +4,8 @@ const mangle = @import("mangle");
 const raylib = @import("raylib");
 const raygui = @import("raygui");
 
+const StableKey = @import("parse.zig").StableKey;
+
 const VectorMap = @This();
 
 pub const parse = struct {

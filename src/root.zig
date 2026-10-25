@@ -33,7 +33,8 @@ pub const Registry = mangle.Registry(
         dash.system,
 
         render.circle,
-        render.player,
+        render.player.body,
+        render.player.resources,
         render.square,
 
         physics.velocity,

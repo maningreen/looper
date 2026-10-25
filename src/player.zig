@@ -15,8 +15,9 @@ const time = @import("time.zig");
 const dash = @import("dash.zig");
 const border = @import("border.zig");
 
-const VectorMap = @import("player/vectormap.zig");
-const particle = @import("player/particle.zig");
+pub const VectorMap = @import("player/vectormap.zig");
+pub const Resource = @import("player/resource.zig").Manager;
+pub const particle = @import("player/particle.zig");
 
 const Player = @This();
 
@@ -27,7 +28,7 @@ comptime accelerator: accelerate.Manager = .{
     },
 },
 comptime player: PlayerFlag = .{},
-comptime renderPlayer: render.player.RenderFlag = .{},
+comptime renderPlayer: render.player.body.RenderFlag = .{},
 comptime friction: alias.Friction = .{},
 
 color: raylib.Color = raylib.Color.yellow,
@@ -42,39 +43,21 @@ keybinds: mangle.Compose(Bindings) = .{},
 
 dashManager: dash.Manager = .{},
 particleManager: particle.Manager = .{ .time = .{ .elapsed = 0 } },
-resource: Resource = .{},
+resource: Resource = .{
+    .count = 2,
+},
 
 pub const default = Player{};
 pub const PlayerFlag = struct {};
 
-const Resource = struct {
-    time: time.Elapsed = .{ .elapsed = 0 },
-    offset: f32 = 10,
-
-    /// will only return [0..3]
-    fn getCount(self: Resource) u2 {
-        return @trunc(@min(3, self.time.elapsed));
-    }
-
-    fn canUse(self: Resource) bool {
-        return self.time.elapsed >= 1;
-    }
-
-    fn use(self: *Resource) bool {
-        if (self.time.elapsed >= 1) {
-            self.time.elapsed -= 1;
-            return true;
-        }
-        return false;
-    }
-};
-
 const Bindings = struct {
-    keys: [2]input.Binding = .{
+    const bindCount: usize = 2;
+
+    keys: [bindCount]input.Binding = .{
         .{ .key = .space },
         .{ .key = .left },
     },
-    comptime callbacks: [2]input.Callback = [_]input.Callback{
+    comptime callbacks: [bindCount]input.Callback = [_]input.Callback{
         callChild(null, .beginDash, .systemFunction, null),
         callChild(null, .fire, .systemFunction, .{ .set = input.Error, .@"error" = .KeymapError }),
     },
