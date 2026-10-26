@@ -1,6 +1,1 @@
-.{
-    .left = .a,
-    .right = .d,
-    .up = .w,
-    .down = .s,
-}
+.{ .direction = .{ .left = .s, .right = .f, .up = .e, .down = .d }, .keys = .{ .dash = .{ .key = .space }, .fire = .{ .key = .left } } }

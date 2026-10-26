@@ -154,7 +154,7 @@ pub const player = struct {
                         .y = @as(f32, @floatFromInt(i)) * blockingOffset,
                     }),
                     .{ .x = blockSize, .y = blockSize },
-                    .white,
+                    rl.Color.fade(.black, 0.6),
                 );
             }
         }

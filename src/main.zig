@@ -1,8 +1,8 @@
 const std = @import("std");
 const Io = std.Io;
 
-const game = @import("game");
-const raylib = game.raylib;
+const looper = @import("looper");
+const raylib = looper.raylib;
 
 pub fn main(init: std.process.Init) !void {
     raylib.setTraceLogLevel(.warning);
@@ -14,13 +14,13 @@ pub fn main(init: std.process.Init) !void {
 
     const pixelLength = 10;
     const renderTexture = try raylib.loadRenderTexture(
-        @trunc(game.border.length / pixelLength),
-        @trunc(game.border.length / pixelLength),
+        @trunc(looper.border.length / pixelLength),
+        @trunc(looper.border.length / pixelLength),
     );
     defer renderTexture.unload();
 
     const rand = std.Random.IoSource{ .io = init.io };
-    var registry = game.Registry.init(init.io, init.gpa, game.Extra{
+    var registry = looper.Registry.init(init.io, init.gpa, looper.Extra{
         .camera = .{
             .offset = .zero(),
             .target = .zero(),
@@ -33,12 +33,12 @@ pub fn main(init: std.process.Init) !void {
     });
     defer registry.deinit();
 
-    try registry.addValue(try game.Player.init(init.gpa, init.io));
+    try registry.addValue(try looper.Player.init(init.gpa, init.io));
 
     raylib.setTargetFPS(60);
     while (!raylib.windowShouldClose()) {
-        const extra: *game.Extra = &registry.info.extra;
-        game.camera.singlePass(&registry.info);
+        const extra: *looper.Extra = &registry.info.extra;
+        looper.camera.singlePass(&registry.info);
         extra.mousePosition = extra.camera.target.subtract(extra.camera.offset.subtract(raylib.getMousePosition()).scale(1 / extra.camera.zoom));
         extra.windowDimensions = .{
             .x = @floatFromInt(raylib.getScreenWidth()),
@@ -54,9 +54,9 @@ pub fn main(init: std.process.Init) !void {
 
         extra.start();
 
-        try registry.emit(game.alias.Render{});
+        try registry.emit(looper.alias.Render{});
 
-        game.border.render();
+        looper.border.render();
 
         extra.end();
     }

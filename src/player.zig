@@ -15,6 +15,8 @@ const time = @import("time.zig");
 const dash = @import("dash.zig");
 const border = @import("border.zig");
 
+const parse = @import("player/parse.zig");
+
 pub const VectorMap = @import("player/vectormap.zig");
 pub const Resource = @import("player/resource.zig").Manager;
 pub const particle = @import("player/particle.zig");
@@ -64,21 +66,23 @@ const Bindings = struct {
 };
 
 pub fn init(gpa: std.mem.Allocator, io: std.Io) !Player {
-    const vectormap = VectorMap.fromFile(gpa, io, null) catch |err| switch (err) {
-        error.OutOfMemory => return error.OutOfMemory,
-        else => VectorMap{},
-    };
+    const file = std.Io.Dir.cwd().openFile(io, parse.localPath, .{ .mode = .read_only });
+    // const vectormap = VectorMap.fromFile(gpa, io, null) catch |err| switch (err) {
+    // error.OutOfMemory => return error.OutOfMemory,
+    // else => VectorMap{},
+    // };
+    _ = io;
     return Player{
-        .vectorMap = vectormap,
+        // .vectorMap = vectormap,
     };
 }
 
 pub fn deinit(comptime T: type, value: *T, info: anytype) void {
-    const keymap: VectorMap = mangle.flags.originalType(value.vectorMap);
-    const file = std.Io.Dir.cwd().createFile(info.io, VectorMap.parse.localPath, .{}) catch return;
+    const file = std.Io.Dir.cwd().createFile(info.io, parse.localPath, .{}) catch return;
+    defer file.close(info.io);
     var writeBuf: [128]u8 = undefined;
     var writer = file.writer(info.io, writeBuf[0..]);
-    std.zon.stringify.serialize(VectorMap.parse.to(keymap), .{}, &writer.interface) catch return;
+    writer.interface.print("{}", .{parse.Storage.from(mangle.flags.originalType(value.vectorMap), value.keybinds_keys)}) catch return;
     writer.flush() catch return;
 }
 

@@ -25,7 +25,7 @@ pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
-    const mod = b.addModule("game", .{
+    const mod = b.addModule("looper", .{
         .root_source_file = b.path("src/root.zig"),
         .target = target,
     });
@@ -45,13 +45,13 @@ pub fn build(b: *std.Build) void {
     }
 
     const exe = b.addExecutable(.{
-        .name = "game",
+        .name = "looper",
         .root_module = b.createModule(.{
             .root_source_file = b.path("src/main.zig"),
             .target = target,
             .optimize = optimize,
             .imports = &.{
-                .{ .name = "game", .module = mod },
+                .{ .name = "looper", .module = mod },
             },
         }),
     });
