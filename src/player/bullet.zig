@@ -9,7 +9,7 @@ velocity: alias.Velocity,
 position: alias.Position,
 
 elapsed: time.Elapsed = .{ .elapsed = 0 },
-max: time.MaxLifetime,
+max: time.MaxLifetime = .{ .max = 0 },
 
 comptime radius: alias.Radius = .{ .radius = 10 },
 comptime col: rl.Color = .ray_white,

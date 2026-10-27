@@ -22,7 +22,7 @@ pub const Manager = struct {
     /// creates a particle at < 0, 0 > with velocity < 0, 0 >
     pub fn createParticle(self: *Manager, random: std.Random) ?particles.Square {
         if (self.time.elapsed >= timeToSpawn) {
-            self.time.elapsed -= timeToSpawn;
+            self.time.elapsed = 0;
 
             return particles.Square{
                 .color = .yellow,
@@ -45,6 +45,7 @@ pub const ranges = struct {
         const scalar = rand.float(f32);
         return scalar * (range[1] - range[0]) + range[0];
     }
+
     pub fn randomFromRange(comptime value: std.meta.DeclEnum(@This()), rand: std.Random) f32 {
         const range = @field(ranges, @tagName(value));
         const scalar = rand.float(f32);

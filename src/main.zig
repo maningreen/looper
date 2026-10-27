@@ -5,21 +5,38 @@ const looper = @import("looper");
 const raylib = looper.raylib;
 
 pub fn main(init: std.process.Init) !void {
+    // seed with IO, then use a DefaultPrng for speed's sake.
+    var rand = std.Random.DefaultPrng.init(
+        (std.Random.IoSource{
+            .io = init.io,
+        }).interface().int(u64),
+    );
+
     raylib.setTraceLogLevel(.warning);
-    raylib.initWindow(1920 * 0.9, 1080 * 0.9, "hell");
+
+    const name = try init.gpa.printSentinel(
+        "Looper{s}",
+        .{
+            looper.messages.getRandom(rand.random()),
+        },
+        0,
+    );
+    std.log.debug("{s}", .{name});
+
+    raylib.initWindow(1920 * 0.9, 1080 * 0.9, name);
     defer raylib.closeWindow();
+
+    init.gpa.free(name);
 
     const shader = try raylib.loadShader(null, "./resources/shaders/palette.glsl");
     defer shader.unload();
 
-    const pixelLength = 10;
     const renderTexture = try raylib.loadRenderTexture(
-        @trunc(looper.border.length / pixelLength),
-        @trunc(looper.border.length / pixelLength),
+        @trunc(looper.border.length / looper.pixelLength),
+        @trunc(looper.border.length / looper.pixelLength),
     );
     defer renderTexture.unload();
 
-    const rand = std.Random.IoSource{ .io = init.io };
     var registry = looper.Registry.init(init.io, init.gpa, looper.Extra{
         .camera = .{
             .offset = .zero(),
@@ -27,7 +44,7 @@ pub fn main(init: std.process.Init) !void {
             .rotation = 0,
             .zoom = 0.4,
         },
-        .random = rand.interface(),
+        .random = rand.random(),
         .renderTexture = renderTexture,
         .shader = shader,
     });
@@ -36,7 +53,7 @@ pub fn main(init: std.process.Init) !void {
     try registry.addValue(try looper.Player.init(init.gpa, init.io));
 
     var last = std.Io.Timestamp.now(init.io, .real);
-    raylib.setTargetFPS(120);
+    raylib.setTargetFPS(60);
     while (!raylib.windowShouldClose()) {
         const now = std.Io.Timestamp.now(init.io, .real);
         const t = @as(f64, @floatFromInt(last.durationTo(now).nanoseconds)) / std.time.ns_per_s;

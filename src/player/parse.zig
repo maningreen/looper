@@ -71,13 +71,13 @@ pub const Storage = struct {
         };
     }
 
-    pub fn parse(buffer: [:0]const u8) ?Storage {
+    pub fn parse(buffer: [:0]const u8, gpa: std.mem.Allocator) ?Storage {
         var diagnostics: std.zon.parse.Diagnostics = .{ .errors = &.{} };
         const parsed = std.zon.parse.fromSlice(
             Storage,
             .{
                 .arena = .failing,
-                .gpa = .failing,
+                .gpa = gpa,
                 .source = buffer,
                 .diagnostics = &diagnostics,
                 .ignore_unknown_fields = true,
@@ -98,6 +98,6 @@ pub const Storage = struct {
         var reader = file.reader(io, &buf);
         const remaining = try reader.interface.allocRemainingAlignedSentinel(gpa, keymapLimit, .@"1", 0);
         defer gpa.free(remaining);
-        return parse(remaining);
+        return parse(remaining, gpa);
     }
 };

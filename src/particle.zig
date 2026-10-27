@@ -22,7 +22,7 @@ pub const Square = struct {
     position: alias.Position = mangle.alias(alias.Position, raylib.Vector2.zero()),
     velocity: alias.Velocity = mangle.alias(alias.Velocity, raylib.Vector2.zero()),
     lifetime: time.Elapsed = mangle.alias(time.Elapsed, 0),
-    maxLifetime: time.MaxLifetime = mangle.alias(time.MaxLifetime, 3),
+    maxLifetime: time.MaxLifetime =  .{ .max = 3 },
     comptime fade: color.fade.Fade = .{ .strength = 1.5 },
     comptime transparent: color.transparent.Transparent = .{}
 };

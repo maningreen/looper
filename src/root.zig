@@ -20,6 +20,8 @@ pub const particle = @import("particle.zig");
 
 pub const camera = @import("camera.zig");
 
+pub const messages= @import("message.zig");
+
 pub const Registry = mangle.Registry(
     &.{
         Player,
@@ -54,7 +56,7 @@ pub const Registry = mangle.Registry(
     Extra,
 );
 
-const pixelLength = 10;
+pub const pixelLength = 5;
 
 pub const Extra = struct {
     pixelLength: u32 = 10,

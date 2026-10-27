@@ -25,7 +25,9 @@ pub const friction = struct {
     });
 
     pub fn process(comptime T: type, value: *T, info: anytype) void {
-        value.v = value.v.subtract(value.v.scale(constant * info.delta));
+        value.v = value.v.subtract(
+            value.v.scale(constant * info.delta),
+        );
     }
 };
 

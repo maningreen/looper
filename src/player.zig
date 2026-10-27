@@ -70,6 +70,7 @@ const Bindings = struct {
 
 pub fn init(gpa: std.mem.Allocator, io: std.Io) !Player {
     const storage = try parse.Storage.fromFile(io, gpa, null);
+    std.log.debug("S:DLFKJDS", .{});
     if (storage) |stored| {
         const map, const keybinds = stored.to();
         return Player{
