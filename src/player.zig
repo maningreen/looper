@@ -21,6 +21,8 @@ pub const VectorMap = @import("player/vectormap.zig");
 pub const Resource = @import("player/resource.zig").Manager;
 pub const particle = @import("player/particle.zig");
 
+pub const Bullet = @import("player/bullet.zig");
+
 const Player = @This();
 
 comptime accelerator: accelerate.Manager = .{
@@ -46,7 +48,8 @@ keybinds: mangle.Compose(Bindings) = .{},
 dashManager: dash.Manager = .{},
 particleManager: particle.Manager = .{ .time = .{ .elapsed = 0 } },
 resource: Resource = .{
-    .count = 2,
+    .count = 4,
+    .rate = 0.75,
 },
 
 pub const default = Player{};
@@ -57,7 +60,7 @@ const Bindings = struct {
 
     keys: [bindCount]input.Binding = .{
         .{ .key = .space },
-        .{ .key = .left },
+        .{ .mouse = .left },
     },
     comptime callbacks: [bindCount]input.Callback = [_]input.Callback{
         callChild(null, .beginDash, .systemFunction, null),
@@ -66,15 +69,16 @@ const Bindings = struct {
 };
 
 pub fn init(gpa: std.mem.Allocator, io: std.Io) !Player {
-    const file = std.Io.Dir.cwd().openFile(io, parse.localPath, .{ .mode = .read_only });
-    // const vectormap = VectorMap.fromFile(gpa, io, null) catch |err| switch (err) {
-    // error.OutOfMemory => return error.OutOfMemory,
-    // else => VectorMap{},
-    // };
-    _ = io;
-    return Player{
-        // .vectorMap = vectormap,
-    };
+    const storage = try parse.Storage.fromFile(io, gpa, null);
+    if (storage) |stored| {
+        const map, const keybinds = stored.to();
+        return Player{
+            .vectorMap = map,
+            .keybinds = .{
+                .keys = keybinds,
+            },
+        };
+    } else return Player{};
 }
 
 pub fn deinit(comptime T: type, value: *T, info: anytype) void {
@@ -106,7 +110,7 @@ fn spawnParticles(comptime T: type, player: *T, a: raylib.Vector2, info: anytype
     const manager: *particle.Manager = &player.particleManager;
     var prt = manager.createParticle(info.extra.random) orelse return;
     prt.position.position = player.position;
-    prt.color = prt.color.fade(0.8);
+    prt.color = prt.color.fade(0.7);
     const velocityScalar: f32 = a.length() / info.delta;
     const velocityAngle = std.math.atan2(-a.y / velocityScalar, -a.x / velocityScalar) + particle.ranges.randomRange(particle.ranges.getVelocityDeviation(velocityScalar), info.extra.random);
     prt.velocity.velocity = .{ .x = @cos(velocityAngle) * velocityScalar, .y = @sin(velocityAngle) * velocityScalar };
@@ -123,9 +127,13 @@ pub fn beginDash(comptime T: type, value: *T, info: anytype) void {
         value.velocity = accel;
 }
 
-pub fn fire(comptime T: type, value: *T, info: anytype) !void {
-    _ = .{ value, info };
-    std.log.debug("dsakfjasf", .{});
+pub fn fire(comptime T: type, player: *T, info: anytype) !void {
+    if (player.resource.canUse()) {
+        std.debug.assert(player.resource.use());
+        const target = info.extra.mousePosition;
+        const bullet = Bullet.spawn(player.position, target);
+        try info.appendDeferred(bullet);
+    }
 }
 
 /// generates a callback
@@ -149,7 +157,10 @@ fn callChild(comptime childInfo: ?struct {
         else if (@typeInfo(@TypeOf(f)).@"fn".return_type) |r|
             if (@typeInfo(r) == .error_union)
                 @typeInfo(r).error_union.error_set,
-        .particular = if (@"error") |e| @field(e.set, @tagName(e.@"error")) else null,
+        .particular = if (@"error") |e|
+            @field(e.set, @tagName(e.@"error"))
+        else
+            null,
     };
     const call = switch (args) {
         .selfConst => if (comptime isError)
@@ -203,16 +214,16 @@ fn callChild(comptime childInfo: ?struct {
                 fn call(comptime U: type, value: *U, reg: anytype) errorSet.set!void {
                     if (childInfo) |info| {
                         f(info.T, &@field(value, @tagName(info.field)), reg) catch |e|
-                            if (comptime errorSet.particular) |r|
-                                return r
+                            return if (comptime errorSet.particular) |r|
+                                r
                             else
-                                return e;
+                                e;
                     } else {
                         f(U, value, reg) catch |e|
-                            if (comptime errorSet.particular) |r|
-                                return r
+                            return if (comptime @as(?errorSet.set, errorSet.particular)) |r|
+                                r
                             else
-                                return e;
+                                e;
                     }
                 }
             }

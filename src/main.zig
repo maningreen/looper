@@ -35,8 +35,13 @@ pub fn main(init: std.process.Init) !void {
 
     try registry.addValue(try looper.Player.init(init.gpa, init.io));
 
-    raylib.setTargetFPS(60);
+    var last = std.Io.Timestamp.now(init.io, .real);
+    raylib.setTargetFPS(120);
     while (!raylib.windowShouldClose()) {
+        const now = std.Io.Timestamp.now(init.io, .real);
+        const t = @as(f64, @floatFromInt(last.durationTo(now).nanoseconds)) / std.time.ns_per_s;
+        last = now;
+
         const extra: *looper.Extra = &registry.info.extra;
         looper.camera.singlePass(&registry.info);
         extra.mousePosition = extra.camera.target.subtract(extra.camera.offset.subtract(raylib.getMousePosition()).scale(1 / extra.camera.zoom));
@@ -44,13 +49,14 @@ pub fn main(init: std.process.Init) !void {
             .x = @floatFromInt(raylib.getScreenWidth()),
             .y = @floatFromInt(raylib.getScreenHeight()),
         };
+
         {
             var key = raylib.getKeyPressed();
             while (key != .null) : (key = raylib.getKeyPressed())
                 try registry.emit(key);
         }
 
-        try registry.process(raylib.getFrameTime());
+        try registry.process(@floatCast(t));
 
         extra.start();
 

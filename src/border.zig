@@ -29,6 +29,10 @@ pub fn wrap(vector: rl.Vector2) rl.Vector2 {
     };
 }
 
+pub fn wrapValue(value: f32) f32 {
+    return value - length * @trunc(2 * (value - length / 2) / length);
+}
+
 pub fn getShortestPathTo(a: rl.Vector2, b: rl.Vector2) rl.Vector2 {
     // from a -> b
     var diff = b.subtract(a);

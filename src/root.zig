@@ -23,6 +23,7 @@ pub const camera = @import("camera.zig");
 pub const Registry = mangle.Registry(
     &.{
         Player,
+        Player.Bullet,
         particle.Square,
     },
     &.{
@@ -126,6 +127,9 @@ pub const Extra = struct {
 
         self.camera.end();
         self.shader.deactivate();
+
+        raylib.drawFPS(0, 0);
+
         raylib.endDrawing();
     }
 };

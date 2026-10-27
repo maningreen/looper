@@ -10,6 +10,16 @@ pub const system = struct {
         },
     };
 
+    pub fn process(comptime T: type, value: *T, info: anytype) !void {
+        inline for (value.bindings, value.callbacks) |bind, call| {
+            switch (bind) {
+                .mouse => |button| if (raylib.isMouseButtonPressed(button))
+                    try call(T, value, info),
+                else => {},
+            }
+        }
+    }
+
     pub fn receive(comptime T: type, value: *T, event: anytype, info: anytype) !void {
         switch (@TypeOf(event)) {
             raylib.KeyboardKey => try recieveKey(T, value, event, info),

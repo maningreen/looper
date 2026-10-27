@@ -5,6 +5,7 @@ const input = @import("../input.zig");
 const KeyBind = @import("bindings.zig").KeyBind;
 
 pub const localPath: []const u8 = "resources/keymap.zig.zon";
+pub const keymapLimit = std.Io.Limit.limited(1024);
 
 pub const StableKey = blk: {
     const info = @typeInfo(raylib.KeyboardKey).@"enum";
@@ -66,12 +67,12 @@ pub const Storage = struct {
             bind.* = @field(self.keys, @tagName(tag)).to();
         return .{
             self.direction,
-            self.keys,
+            bindings,
         };
     }
 
-    pub fn parse(buffer: []const u8) ?Storage {
-        const diagnostics: std.zon.parse.Diagnostics = .{ .errors = &.{} };
+    pub fn parse(buffer: [:0]const u8) ?Storage {
+        var diagnostics: std.zon.parse.Diagnostics = .{ .errors = &.{} };
         const parsed = std.zon.parse.fromSlice(
             Storage,
             .{
@@ -89,12 +90,14 @@ pub const Storage = struct {
         return std.zon.fmt(self, .{}).format(writer);
     }
 
-    pub fn fromFile(io: std.Io, gpa: std.mem.Allocator, path: ?[]const u8) !Storage {
+    pub fn fromFile(io: std.Io, gpa: std.mem.Allocator, path: ?[]const u8) !?Storage {
         const file = try std.Io.Dir.cwd().openFile(io, path orelse localPath, .{});
         defer file.close(io);
 
         var buf: [256]u8 = undefined;
         var reader = file.reader(io, &buf);
-        // reader.interface.take
+        const remaining = try reader.interface.allocRemainingAlignedSentinel(gpa, keymapLimit, .@"1", 0);
+        defer gpa.free(remaining);
+        return parse(remaining);
     }
 };
