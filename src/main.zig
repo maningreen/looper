@@ -16,9 +16,7 @@ pub fn main(init: std.process.Init) !void {
 
     const name = try init.gpa.printSentinel(
         "Looper{s}",
-        .{
-            looper.messages.getRandom(rand.random()),
-        },
+        .{looper.messages.getRandom(rand.random())},
         0,
     );
     if (@import("builtin").mode == .debug)

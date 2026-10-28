@@ -14,13 +14,14 @@ pub const border = @import("border.zig");
 pub const time = @import("time.zig");
 pub const color = @import("color.zig");
 pub const dash = @import("dash.zig");
+pub const collision = @import("collision.zig");
 
 pub const Player = @import("player.zig");
 pub const particle = @import("particle.zig");
 
 pub const camera = @import("camera.zig");
 
-pub const messages= @import("message.zig");
+pub const messages = @import("message.zig");
 
 pub const Registry = mangle.Registry(
     &.{
@@ -52,13 +53,16 @@ pub const Registry = mangle.Registry(
         color.fade.system,
         color.transparent.system,
 
+        collision.systems.hitbox,
+        collision.systems.hurtbox,
+
         camera.system,
         border.system,
     },
     Extra,
 );
 
-pub const pixelLength = 10;
+pub const pixelLength = 5;
 
 pub const Extra = struct {
     pixelLength: u16 = pixelLength,

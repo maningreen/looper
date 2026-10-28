@@ -22,6 +22,7 @@ pub const Resource = @import("player/resource.zig").Manager;
 pub const particle = @import("player/particle.zig");
 
 pub const Bullet = @import("player/bullet.zig");
+pub const Node = @import("player/node.zig");
 pub const Afterimage = @import("player/afterimage.zig");
 
 const Player = @This();

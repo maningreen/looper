@@ -13,7 +13,7 @@ out vec4 finalColor;
 
 uniform float mixing = 0.1;
 
-const int paletteSize = 15;
+const int paletteSize = 16;
 uniform vec4 paletteArray[paletteSize] = vec4[](
   vec4(0.0627, 0.0039, 0.0471, 1.0), // #10010C
   vec4(0.0824, 0.0039, 0.0627, 1.0), // #150110
@@ -29,7 +29,8 @@ uniform vec4 paletteArray[paletteSize] = vec4[](
   vec4(1.0000, 0.4941, 0.4078, 1.0), // #FF7E68
   vec4(1.0000, 0.6667, 0.5216, 1.0), // #FFAA85
   vec4(1.0000, 0.8157, 0.6745, 1.0), // #FFD0AC
-  vec4(1.0000, 0.9490, 0.8706, 1.0)  // #FFF2DE
+  vec4(1.0000, 0.9490, 0.8706, 1.0), // #FFF2DE
+  vec4(1.0000, 0.9490, 0.8706, 1.0)  // #A2BBA2
 );
 
 vec4 palette(vec4 i) {
