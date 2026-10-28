@@ -48,6 +48,7 @@ pub fn main(init: std.process.Init) !void {
         .random = rand.random(),
         .renderTexture = renderTexture,
         .shader = shader,
+        .paused = false,
     });
     defer registry.deinit();
 
@@ -62,7 +63,8 @@ pub fn main(init: std.process.Init) !void {
 
         const extra: *looper.Extra = &registry.info.extra;
         looper.camera.singlePass(&registry.info);
-        extra.mousePosition = extra.camera.target.subtract(extra.camera.offset.subtract(raylib.getMousePosition()).scale(1 / extra.camera.zoom));
+        if (!extra.paused)
+            extra.mousePosition = extra.camera.target.subtract(extra.camera.offset.subtract(raylib.getMousePosition()).scale(1 / extra.camera.zoom));
         extra.windowDimensions = .{
             .x = @floatFromInt(raylib.getScreenWidth()),
             .y = @floatFromInt(raylib.getScreenHeight()),
@@ -70,11 +72,15 @@ pub fn main(init: std.process.Init) !void {
 
         {
             var key = raylib.getKeyPressed();
-            while (key != .null) : (key = raylib.getKeyPressed())
+            while (key != .null) : (key = raylib.getKeyPressed()) {
+                if (key == .p) {
+                    extra.paused = !extra.paused;
+                }
                 try registry.emit(key);
+            }
         }
 
-        try registry.process(@floatCast(t));
+        try registry.process(if (extra.paused) 0 else @floatCast(t));
 
         extra.start();
 

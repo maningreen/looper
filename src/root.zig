@@ -80,6 +80,7 @@ pub const Extra = struct {
 
     renderTexture: raylib.RenderTexture2D,
     shader: raylib.Shader,
+    paused: bool,
 
     pub fn start(self: Extra) void {
         raylib.beginDrawing();
