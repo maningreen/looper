@@ -26,6 +26,7 @@ pub const Registry = mangle.Registry(
     &.{
         Player,
         Player.Bullet,
+        Player.Afterimage,
         particle.Square,
     },
     &.{
@@ -46,6 +47,7 @@ pub const Registry = mangle.Registry(
 
         time.elapsed,
         time.maxLifetime,
+        time.lifetime,
 
         color.fade.system,
         color.transparent.system,
@@ -56,10 +58,10 @@ pub const Registry = mangle.Registry(
     Extra,
 );
 
-pub const pixelLength = 5;
+pub const pixelLength = 10;
 
 pub const Extra = struct {
-    pixelLength: u32 = 10,
+    pixelLength: u16 = pixelLength,
     mousePosition: raylib.Vector2 = .zero(),
     windowDimensions: raylib.Vector2 = .zero(),
     camera: raylib.Camera2D = .{
@@ -97,12 +99,12 @@ pub const Extra = struct {
 
         const renderCount: struct { i32, i32 } = .{
             @divCeil(
-                @as(c_int, @ceil(self.windowDimensions.x / self.camera.zoom)),
-                self.renderTexture.texture.width * pixelLength,
+                @as(i32, @ceil(self.windowDimensions.x / self.camera.zoom)),
+                self.renderTexture.texture.width * self.pixelLength,
             ) + 2,
             @divCeil(
                 @as(c_int, @ceil(self.windowDimensions.y / self.camera.zoom)),
-                self.renderTexture.texture.height * pixelLength,
+                self.renderTexture.texture.height * self.pixelLength,
             ) + 2,
         };
 
@@ -116,12 +118,12 @@ pub const Extra = struct {
             .{
                 .x = 0,
                 .y = 0,
-                .height = @as(f32, @floatFromInt(self.renderTexture.texture.width * pixelLength * renderCount[1])),
-                .width = @as(f32, @floatFromInt(self.renderTexture.texture.height * pixelLength * renderCount[0])),
+                .height = @as(f32, @floatFromInt(self.renderTexture.texture.width * self.pixelLength * renderCount[1])),
+                .width = @as(f32, @floatFromInt(self.renderTexture.texture.height * self.pixelLength * renderCount[0])),
             },
             .{
-                .x = @as(f32, @floatFromInt(self.renderTexture.texture.width * pixelLength * @divTrunc(renderCount[0], 2))),
-                .y = @as(f32, @floatFromInt(self.renderTexture.texture.height * pixelLength * @divTrunc(renderCount[1], 2))),
+                .x = @as(f32, @floatFromInt(self.renderTexture.texture.width * self.pixelLength * @divTrunc(renderCount[0], 2))),
+                .y = @as(f32, @floatFromInt(self.renderTexture.texture.height * self.pixelLength * @divTrunc(renderCount[1], 2))),
             },
             0,
             .white,

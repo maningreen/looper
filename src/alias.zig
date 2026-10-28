@@ -18,6 +18,7 @@ pub const Velocity = mangle.Alias(raylib.Vector2, "velocity");
 
 pub const Speed = mangle.Alias(f32, "speed");
 pub const Radius = mangle.Alias(f32, "radius");
+pub const Angle = mangle.Alias(f32, "theta");
 
 // conditions
 

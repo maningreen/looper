@@ -39,3 +39,20 @@ pub const maxLifetime = struct {
         }
     }
 };
+
+pub const lifetime = struct {
+    pub const requirements = mangle.system.Signature.fromStruct(struct {
+        elapsed: Elapsed,
+        life: Lifetime,
+    });
+
+    pub fn process(comptime T: type, value: *T, info: anytype) !void {
+        const life: Lifetime = value.life;
+        if (value.elapsed >= life.max(T, value, info)) {
+            try if (life.after) |f|
+                f(T, value, info)
+            else
+                info.dropDeferred(value);
+        }
+    }
+};

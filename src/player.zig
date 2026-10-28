@@ -22,18 +22,20 @@ pub const Resource = @import("player/resource.zig").Manager;
 pub const particle = @import("player/particle.zig");
 
 pub const Bullet = @import("player/bullet.zig");
+pub const Afterimage = @import("player/afterimage.zig");
 
 const Player = @This();
 
 comptime accelerator: accelerate.Manager = .{
     .table = .{
         .accelerate = getAccel,
-        .onAccelerate = spawnParticles,
+        .onAccelerate = manageAccelerate,
     },
 },
 comptime player: PlayerFlag = .{},
 comptime renderPlayer: render.player.body.RenderFlag = .{},
 comptime friction: alias.Friction = .{},
+comptime afterimageTime: f32 = 0.5 / 4.0,
 
 color: raylib.Color = raylib.Color.yellow,
 vectorMap: VectorMap = .{ .left = .s, .right = .f, .up = .e, .down = .d },
@@ -70,7 +72,6 @@ const Bindings = struct {
 
 pub fn init(gpa: std.mem.Allocator, io: std.Io) !Player {
     const storage = try parse.Storage.fromFile(io, gpa, null);
-    std.log.debug("S:DLFKJDS", .{});
     if (storage) |stored| {
         const map, const keybinds = stored.to();
         return Player{
@@ -135,6 +136,23 @@ pub fn fire(comptime T: type, player: *T, info: anytype) !void {
         const bullet = Bullet.spawn(player.position, target);
         try info.appendDeferred(bullet);
     }
+}
+
+pub fn afterimage(player: anytype, info: anytype) ?Afterimage {
+    if (@mod(player.dashManager.time.elapsed, player.afterimageTime) < info.delta and player.dashManager.isDashing) {
+        return Afterimage{
+            .col = raylib.Color.yellow.fade(0.8),
+            .position = .{ .position = player.position },
+            .angle = .{ .theta = std.math.atan2(info.extra.mousePosition.y - player.position.y, info.extra.mousePosition.x - player.position.x) },
+        };
+    } else return null;
+}
+
+pub fn manageAccelerate(comptime T: type, player: *T, accel: raylib.Vector2, info: anytype) accelerate.Manager.Error!void {
+    try spawnParticles(T, player, accel, info);
+    if(afterimage(player, info)) |after| {
+        info.appendDeferred(after) catch return accelerate.Manager.Error.AccelerateError;
+    } 
 }
 
 /// generates a callback

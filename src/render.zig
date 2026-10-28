@@ -76,17 +76,20 @@ pub const square = struct {
 };
 
 pub const player = struct {
-    pub const size = 50;
+    pub const size = 40;
     pub const body = struct {
         const deltaTheta = std.math.pi * 2.0 / 3.0;
 
-        pub const RenderFlag = struct {};
+        pub const RenderFlag = struct {
+            dot: bool = true,
+        };
 
-        pub const requirements = mangle.system.Signature.fromStruct(struct {
-            flag: RenderFlag,
-            position: alias.Position,
-            color: rl.Color,
-        });
+        pub const requirements = mangle.system.Signature{ .fields = &.{
+            .{ .name = "flag", .schema = .{ .simple = RenderFlag } },
+            .{ .name = "position", .schema = .{ .simple = alias.Position } },
+            .{ .name = "color", .schema = .{ .simple = rl.Color } },
+            .{ .name = "angle", .schema = .{ .simple = alias.Angle }, .status = .optional },
+        } };
 
         pub fn receive(comptime T: type, value: *T, event: anytype, info: anytype) void {
             switch (@TypeOf(event)) {
@@ -96,23 +99,34 @@ pub const player = struct {
         }
 
         fn drawPlayer(value: anytype, info: anytype) void {
-            const mousePosition = info.extra.mousePosition;
+            // const mousePosition = info.extra.mousePosition;
+            // const diff: rl.Vector2 = mousePosition.subtract(value.position);
 
-            const diff: rl.Vector2 = mousePosition.subtract(value.position);
-            const farVetrex = diff.normalize().scale(size).add(value.position);
+            const theta =
+                if (@hasField(@TypeOf(value.*), "angle"))
+                    value.angle
+                else
+                    std.math.atan2(
+                        info.extra.mousePosition.y - value.position.y,
+                        info.extra.mousePosition.x - value.position.x,
+                    );
 
-            const theta = std.math.atan2(diff.y, diff.x);
-            const length = 40;
+            const farVetrex =
+                if (@hasField(@TypeOf(value.*), "angle"))
+                    (rl.Vector2{ .x = @cos(theta) * size, .y = @sin(theta) * size }).add(value.position)
+                else
+                    info.extra.mousePosition.subtract(value.position).normalize().scale(size).add(value.position);
 
             const drawA = theta + deltaTheta;
-            const sideVertexA = rl.Vector2.init(length * std.math.cos(drawA), length * std.math.sin(drawA));
+            const sideVertexA = rl.Vector2.init(size * std.math.cos(drawA), size * std.math.sin(drawA));
             rl.drawTriangle(farVetrex, value.position, sideVertexA.add(value.position), value.color);
 
             const drawB = theta - deltaTheta;
-            const sideVertexB = rl.Vector2.init(length * std.math.cos(drawB), length * std.math.sin(drawB));
+            const sideVertexB = rl.Vector2.init(size * std.math.cos(drawB), size * std.math.sin(drawB));
             rl.drawTriangle(value.position, farVetrex, sideVertexB.add(value.position), value.color);
 
-            rl.drawCircleV(value.position, 5, .white);
+            if (value.flag.dot)
+                rl.drawCircleV(value.position, 5, .white);
         }
     };
 

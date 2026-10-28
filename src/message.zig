@@ -59,8 +59,10 @@ const messages: []const []const u8 = &.{
 
     ": buzzword-buzzword-buzzword",
     ": insert witty-self-referential joke",
+
+    ": better than geometry class!",
 };
 
-pub fn getRandom(r: std.Random) []const u8 {
+pub inline fn getRandom(r: std.Random) []const u8 {
     return messages[r.int(usize) % messages.len];
 }

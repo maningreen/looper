@@ -10,6 +10,7 @@ const camera = @import("../camera.zig");
 
 const Elapsed = @import("../time.zig").Elapsed;
 const VectorMap = @import("../player/vectormap.zig");
+const Afterimage = @import("afterimage.zig");
 
 const particles = @import("../particle.zig");
 

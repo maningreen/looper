@@ -21,7 +21,8 @@ pub fn main(init: std.process.Init) !void {
         },
         0,
     );
-    std.log.debug("{s}", .{name});
+    if (@import("builtin").mode == .debug)
+        std.log.debug("Name: {s}", .{name});
 
     raylib.initWindow(1920 * 0.9, 1080 * 0.9, name);
     defer raylib.closeWindow();
@@ -53,7 +54,7 @@ pub fn main(init: std.process.Init) !void {
     try registry.addValue(try looper.Player.init(init.gpa, init.io));
 
     var last = std.Io.Timestamp.now(init.io, .real);
-    raylib.setTargetFPS(60);
+    raylib.setTargetFPS(120);
     while (!raylib.windowShouldClose()) {
         const now = std.Io.Timestamp.now(init.io, .real);
         const t = @as(f64, @floatFromInt(last.durationTo(now).nanoseconds)) / std.time.ns_per_s;
