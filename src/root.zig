@@ -17,6 +17,8 @@ pub const color = @import("color.zig");
 pub const dash = @import("dash.zig");
 pub const collision = @import("collision.zig");
 
+pub const enemy = @import("enemy.zig");
+
 pub const Player = @import("player.zig");
 pub const particle = @import("particle.zig");
 pub const HealthManager = @import("health.zig");
@@ -31,6 +33,7 @@ pub const Registry = mangle.Registry(
         Player.Bullet,
         Player.Afterimage,
         particle.Square,
+        enemy.Simple,
     },
     &.{
         input.system,
