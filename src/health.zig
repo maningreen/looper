@@ -20,7 +20,7 @@ pub const system = struct {
         },
     };
 
-    pub fn process(comptime T: type, value: *T, info: anytype) void {
+    pub fn process(comptime T: type, value: *T, info: anytype) !void {
         if (value.hm.isDead()) {
             if (@hasField(T, "extra"))
                 if (value.extra.onDeath) |f| 
@@ -53,4 +53,9 @@ pub fn heal(hm: HealthManager, hp: f32) HealthManager {
 
 pub fn isDead(hm: HealthManager) bool {
     return hm.health <= 0;
+}
+
+/// returns from [0, 1] the health relative to max
+pub fn getScalar(hm: HealthManager) f32 {
+    return hm.health / hm.maxHealth;
 }

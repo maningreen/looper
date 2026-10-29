@@ -14,7 +14,9 @@ const messages: []const []const u8 = &.{
 
     ": please enjoy!",
 
+    ": terraria-minecraft joke",
     ": splash-text stolen from terraria",
+    ": splash-text stolen from minecraft",
     ": useless feature > useful feature",
 
     ": an asteroids clone",
@@ -29,7 +31,6 @@ const messages: []const []const u8 = &.{
     ": written in zig",
     ": using raylib",
     // ": and lua support!",
-    ": mangle.zig on github",
 
     ": consider modding!",
 
@@ -54,8 +55,6 @@ const messages: []const []const u8 = &.{
 
     ": I can code, but I can't spell",
     ": If you mod multiplayer I'll give you a dollar",
-
-    ": terraria-minecraft joke",
 
     ": buzzword-buzzword-buzzword",
     ": insert witty-self-referential joke",

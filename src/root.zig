@@ -4,6 +4,7 @@ const Io = std.Io;
 pub const mangle = @import("mangle");
 pub const raylib = @import("raylib");
 pub const raygui = @import("raygui");
+pub const zlua = @import("zlua");
 
 pub const input = @import("input.zig");
 pub const accelerate = @import("accelerate.zig");
@@ -18,6 +19,7 @@ pub const collision = @import("collision.zig");
 
 pub const Player = @import("player.zig");
 pub const particle = @import("particle.zig");
+pub const HealthManager = @import("health.zig");
 
 pub const camera = @import("camera.zig");
 
@@ -41,6 +43,7 @@ pub const Registry = mangle.Registry(
         render.player.body,
         render.player.resources,
         render.square,
+        render.health.system,
 
         physics.velocity,
         physics.friction,
@@ -53,8 +56,12 @@ pub const Registry = mangle.Registry(
         color.fade.system,
         color.transparent.system,
 
-        collision.systems.hitbox,
-        collision.systems.hurtbox,
+        collision.systems.hitbox.position,
+        collision.systems.hitbox.manage,
+        collision.systems.hurtbox.position,
+        collision.systems.hurtbox.manage,
+
+        HealthManager.system,
 
         camera.system,
         border.system,
@@ -62,7 +69,7 @@ pub const Registry = mangle.Registry(
     Extra,
 );
 
-pub const pixelLength = 5;
+pub const pixelLength = 4;
 
 pub const Extra = struct {
     pixelLength: u16 = pixelLength,
@@ -81,6 +88,7 @@ pub const Extra = struct {
         .zoom = 1.0 / @as(comptime_float, pixelLength),
     },
     random: std.Random,
+    lua: *zlua.Lua,
 
     renderTexture: raylib.RenderTexture2D,
     shader: raylib.Shader,

@@ -11,3 +11,4 @@ const physics = @import("physics.zig");
 pub const circle = @import("render/circle.zig");
 pub const square = @import("render/square.zig");
 pub const player = @import("render/player.zig");
+pub const health = @import("render/health.zig");

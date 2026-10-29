@@ -12,6 +12,7 @@ const Dependency = struct {
 
 const dependencies: []const Dependency = &.{
     Dependency{ .name = "mangle" },
+    Dependency{ .name = "zlua" },
     Dependency{
         .name = "raylib_zig",
         .modules = &.{

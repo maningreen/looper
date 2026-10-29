@@ -16,6 +16,8 @@ const dash = @import("dash.zig");
 const border = @import("border.zig");
 
 const parse = @import("player/parse.zig");
+const HealthManager = @import("health.zig");
+const collision = @import("collision.zig");
 
 pub const VectorMap = @import("player/vectormap.zig");
 pub const Resource = @import("player/resource.zig").Manager;
@@ -37,13 +39,26 @@ comptime player: PlayerFlag = .{},
 comptime renderPlayer: render.player.body.RenderFlag = .{},
 comptime friction: alias.Friction = .{},
 comptime afterimageTime: f32 = 0.5 / 4.0,
+comptime collisionInfo: collision.systems.hurtbox.manage.Info = .{ .healthManager = true },
+comptime heathInfo: render.health.Flag = .{
+    .offset = .{
+        .height = 10,
+        .width = 50,
+        .x = -25,
+        .y = 50,
+    },
+},
 
+hm: HealthManager = .init(10),
+hurtbox: collision.Hurtbox(&.{.player}) = .{
+    .radius = 50,
+},
 color: raylib.Color = raylib.Color.yellow,
 vectorMap: VectorMap = .{ .left = .s, .right = .f, .up = .e, .down = .d },
 position: alias.Position = mangle.alias(alias.Position, raylib.Vector2.init(border.defaultLength / 2, border.defaultLength / 2)),
 velocity: alias.Velocity = mangle.alias(alias.Velocity, raylib.Vector2.zero()),
 speed: alias.Speed = mangle.alias(alias.Speed, 1250),
-dashControl: alias.Speed = mangle.alias(alias.Speed, 2000),
+dashControl: alias.Speed = mangle.alias(alias.Speed, 2000 * 4),
 
 cameraFollow: camera.Follow = mangle.alias(camera.Follow, true),
 keybinds: mangle.Compose(Bindings) = .{},
@@ -70,7 +85,6 @@ const Bindings = struct {
         callChild(null, .fire, .systemFunction, .{ .set = input.Error, .@"error" = .KeymapError }),
     },
 };
-
 pub fn init(gpa: std.mem.Allocator, io: std.Io) !Player {
     const storage = try parse.Storage.fromFile(io, gpa, null);
     if (storage) |stored| {
@@ -114,8 +128,8 @@ fn spawnParticles(comptime T: type, player: *T, a: raylib.Vector2, info: anytype
     var prt = manager.createParticle(info.extra.random) orelse return;
     prt.position.position = player.position;
     prt.color = prt.color.fade(0.7);
-    const velocityScalar: f32 = a.length() / info.delta;
-    const velocityAngle = std.math.atan2(-a.y / velocityScalar, -a.x / velocityScalar) + particle.ranges.randomRange(particle.ranges.getVelocityDeviation(velocityScalar), info.extra.random);
+    const velocityScalar: f32 = @min(a.length() / info.delta, 2000);
+    const velocityAngle = std.math.atan2(-a.y, -a.x) + particle.ranges.randomRange(particle.ranges.getVelocityDeviation(velocityScalar), info.extra.random);
     prt.velocity.velocity = .{ .x = @cos(velocityAngle) * velocityScalar, .y = @sin(velocityAngle) * velocityScalar };
     info.appendDeferred(prt) catch return accelerate.Manager.Error.AccelerateError;
 }
@@ -151,9 +165,9 @@ pub fn afterimage(player: anytype, info: anytype) ?Afterimage {
 
 pub fn manageAccelerate(comptime T: type, player: *T, accel: raylib.Vector2, info: anytype) accelerate.Manager.Error!void {
     try spawnParticles(T, player, accel, info);
-    if(afterimage(player, info)) |after| {
+    if (afterimage(player, info)) |after| {
         info.appendDeferred(after) catch return accelerate.Manager.Error.AccelerateError;
-    } 
+    }
 }
 
 /// generates a callback

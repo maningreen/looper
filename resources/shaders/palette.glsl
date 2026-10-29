@@ -11,7 +11,7 @@ uniform vec4 colDiffuse;
 // Output fragment color
 out vec4 finalColor;
 
-uniform float mixing = 0.1;
+uniform float mixing = 0.2;
 
 const int paletteSize = 16;
 uniform vec4 paletteArray[paletteSize] = vec4[](

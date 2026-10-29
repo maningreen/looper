@@ -5,21 +5,21 @@
     .minimum_zig_version = "0.16.0",
     .dependencies = .{
         .mangle = .{
-            .url = "git+https://github.com/maningreen/mangle.zig#ed5754d06d91b655889d906f7c4890ddd6e30159",
-            .hash = "mangle-0.0.1-McYoGkB7AQARR_agfHk7bgky0E3SPGHpyft6Ycr8X27F",
+            .url = "git+https://github.com/maningreen/mangle.zig#30f8b887f9983b01325a7856215ffd5e9c313623",
+            .hash = "mangle-0.0.1-McYoGut-AQA1goeecaxgHkK-diRqzCUeYAdR9kqlV9pt",
         },
         .raylib_zig = .{
             .url = "git+https://github.com/raylib-zig/raylib-zig.git#50d450099da664bedd7dcc6ed40204ab0bb861a5",
             .hash = "raylib_zig-6.0.0-KE8REDSmBQAbyUv_Fh71wgvhQSP2zsmVxtPRLzCgIXWK",
         },
         .zlua = .{
-            .url = "git+https://github.com/natecraddock/ziglua.git#8b2c14e0f9f89a9407dd7dd91752c7d8fd03cb62",
-            .hash = "zlua-0.1.0-hGRpC8yYBQAtI5hy60lb1vK9Tc7s-Ouu0aMFe2Kdc3_s",
+            .url = "git+https://github.com/natecraddock/ziglua#bf2fb9abc166864e5ddc77c76bf009471139f6a7",
+            .hash = "zlua-0.1.0-hGRpC7KqBQCJQLGzzzGXersJaMRLXkiuRABoxD5zebHf",
         },
     },
     .paths = .{
         "build.zig",
         "build.zig.zon",
-        "src",
+        "src/",
     },
 }

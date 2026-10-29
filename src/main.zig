@@ -4,6 +4,9 @@ const Io = std.Io;
 const looper = @import("looper");
 const raylib = looper.raylib;
 
+const zlua = looper.zlua;
+const Lua = zlua.Lua;
+
 pub fn main(init: std.process.Init) !void {
     // seed with IO, then use a DefaultPrng for speed's sake.
     var rand = std.Random.DefaultPrng.init(
@@ -36,6 +39,12 @@ pub fn main(init: std.process.Init) !void {
     );
     defer renderTexture.unload();
 
+    var lua = try Lua.init(init.gpa);
+    defer lua.deinit();
+    lua.openMath();
+    lua.openBase();
+    lua.openString();
+
     var registry = looper.Registry.init(init.io, init.gpa, looper.Extra{
         .camera = .{
             .offset = .zero(),
@@ -47,13 +56,14 @@ pub fn main(init: std.process.Init) !void {
         .renderTexture = renderTexture,
         .shader = shader,
         .paused = false,
+        .lua = lua,
     });
     defer registry.deinit();
 
     try registry.addValue(try looper.Player.init(init.gpa, init.io));
 
     var last = std.Io.Timestamp.now(init.io, .real);
-    raylib.setTargetFPS(120);
+    raylib.setTargetFPS(60);
     while (!raylib.windowShouldClose()) {
         const now = std.Io.Timestamp.now(init.io, .real);
         const t = @as(f64, @floatFromInt(last.durationTo(now).nanoseconds)) / std.time.ns_per_s;

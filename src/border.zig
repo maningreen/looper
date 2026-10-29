@@ -35,14 +35,17 @@ pub fn wrapValue(value: f32) f32 {
 
 pub fn getShortestPathTo(a: rl.Vector2, b: rl.Vector2) rl.Vector2 {
     // from a -> b
-    var diff = b.subtract(a);
-    if (@abs(diff.x) > length) {
-        diff.x += length * -std.math.sign(diff.x);
-    }
-    if (@abs(diff.y) > length) {
-        diff.x += length * -std.math.sign(diff.x);
-    }
-    return diff;
+    const diff = b.subtract(a);
+    return .{
+        .x = (diff.x) - length * @trunc(diff.x / (length / 2)),
+        .y = (diff.y) - length * @trunc(diff.y / (length / 2)),
+    };
+}
+
+pub fn checkCollisionCircles(posA: rl.Vector2, radiusA: f32, posB: rl.Vector2, radiusB: f32) bool {
+    const minDist = (radiusA + radiusB) * (radiusA + radiusB);
+    const distance = getShortestPathTo(posA, posB).lengthSqr();
+    return distance <= minDist;
 }
 
 pub fn render() void {
