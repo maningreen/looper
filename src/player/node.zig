@@ -14,8 +14,3 @@ pub const Node = struct {
 
     comptime radius: f32 = 10,
 };
-
-pub const systems = struct {
-    pub const render = struct {
-    };
-};

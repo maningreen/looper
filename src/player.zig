@@ -3,7 +3,6 @@ const Io = std.Io;
 
 const mangle = @import("mangle");
 const raylib = @import("raylib");
-const raygui = @import("raygui");
 
 const accelerate = @import("accelerate.zig");
 const input = @import("input.zig");

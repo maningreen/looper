@@ -62,6 +62,7 @@ pub fn main(init: std.process.Init) !void {
 
     try registry.addValue(try looper.Player.init(init.gpa, init.io));
     try registry.addValue(looper.enemy.Simple{});
+    try registry.addValue(looper.T{looper.Laser.init(.{ .x = 100, .y = 100}, .{ .x = -5050, .y = 505}, .white, 30)});
 
     var last = std.Io.Timestamp.now(init.io, .real);
     raylib.setTargetFPS(60);

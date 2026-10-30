@@ -18,6 +18,7 @@ pub const dash = @import("dash.zig");
 pub const collision = @import("collision.zig");
 
 pub const enemy = @import("enemy.zig");
+pub const Laser = @import("laser.zig");
 
 pub const Player = @import("player.zig");
 pub const particle = @import("particle.zig");
@@ -27,6 +28,8 @@ pub const camera = @import("camera.zig");
 
 pub const messages = @import("message.zig");
 
+pub const T = struct { Laser };
+
 pub const Registry = mangle.Registry(
     &.{
         Player,
@@ -34,6 +37,7 @@ pub const Registry = mangle.Registry(
         Player.Afterimage,
         particle.Square,
         enemy.Simple,
+        T,
     },
     &.{
         input.system,
@@ -47,6 +51,7 @@ pub const Registry = mangle.Registry(
         render.player.resources,
         render.square,
         render.health.system,
+        Laser.system.render,
 
         physics.velocity,
         physics.friction,

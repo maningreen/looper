@@ -5,12 +5,12 @@
     .minimum_zig_version = "0.16.0",
     .dependencies = .{
         .mangle = .{
-            .url = "git+https://github.com/maningreen/mangle.zig#30f8b887f9983b01325a7856215ffd5e9c313623",
-            .hash = "mangle-0.0.1-McYoGut-AQA1goeecaxgHkK-diRqzCUeYAdR9kqlV9pt",
+            .url = "git+https://github.com/maningreen/mangle.zig/#f8a0ce43bc5e60f40c6ecec3e8b5be843f043a46",
+            .hash = "mangle-0.0.1-McYoGkR_AQCXI5DMTeDpgdBU_zNX9Y0Cz0rimQMOIR37",
         },
         .raylib_zig = .{
-            .url = "git+https://github.com/raylib-zig/raylib-zig.git#50d450099da664bedd7dcc6ed40204ab0bb861a5",
-            .hash = "raylib_zig-6.0.0-KE8REDSmBQAbyUv_Fh71wgvhQSP2zsmVxtPRLzCgIXWK",
+            .url = "git+https://github.com/raylib-zig/raylib-zig.git#28bbe30112f605da918db00eff53a75ce1aa9180",
+            .hash = "raylib_zig-6.2.0-KE8RELGmBQDX1v1DqBN57pNxJ-b-MIa1S-M7NXT9Eplr",
         },
         .zlua = .{
             .url = "git+https://github.com/natecraddock/ziglua#bf2fb9abc166864e5ddc77c76bf009471139f6a7",
