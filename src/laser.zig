@@ -34,61 +34,70 @@ pub const Iterator = struct {
     laser: ?Laser,
 
     pub fn next(self: *Iterator) ?Laser {
-        if (self.laser) |*las| {
-            const offset = las.localOffset();
-            const end: rl.Vector2 = las.start.position.add(offset);
-            if (!border.wrap(end).equals(end)) {
-                std.log.debug("wraps", .{});
-                // step 1: get *where* it wraps
+        const las = &(self.laser orelse return null);
+        const offset = las.localOffset();
+        // there are two conditions (x|y) < 0 and (x|y) > border.length
+        // (x|y)(t: [0, 1]) = start + offset * t
+        // so if (x|y) <= 0
+        //     -start / offset = t
+        // so but if (x|y) > border.length
+        //     t == border.length - start
+        //          ---------------------
+        //                  offset
+        // which can be generalized to
+        // t == (target) - start
+        //      ----------------
+        //            offset
+        // and if T \elem [0, 1], then it hits. otherwise, it don't
+        // Then plugging T -> p(T) will return the position of the collision (local)
+        // It also happens that T * las.length == the length of the laser before breaking.
+        //
+        // Calcluating whether or not x is negative or note keeps us from doing both equations
 
-                // there are two conditions (x|y) < 0 and (x|y) > border.length
-                // (x|y)(t: [0, 1]) = start + offset * t
-                // so if (x|y) <= 0
-                //     -start / offset = t
-                // so but if (x|y) > border.length
-                //     t == border.length - start
-                //          ---------------------
-                //                  offset
-                // which can be generalized to
-                // t == (target) - start
-                //      ----------------
-                //            offset
-                // and if T \elem [0, 1], then it hits. otherwise, it don't
-                // Then plugging T -> p(T) will return the position of the collision (local)
-                // It also happens that T * las.length == the length of the laser before breaking.
-                //
-                // Calcluating whether or not x is negative or note keeps us from doing both equations
+        const negX = offset.x < 0;
+        const negY = offset.y < 0;
 
-                const negX = offset.x < 0;
-                const negY = offset.y < 0;
+        const targetX = if (negX) 0 else border.length;
+        const targetY = if (negY) 0 else border.length;
 
-                const targetX = if (negX) 0 else border.length;
-                const targetY = if (negY) 0 else border.length;
-
-                const hitTs = .{
-                    (targetX - las.start.position.x) / offset.x,
-                    (targetY - las.start.position.y) / offset.y,
-                };
-                const hitT = @min(hitTs[0], hitTs[1]);
-                const hitLength = hitT * las.length;
-                const sub = Laser{
-                    .length = hitLength,
-                    .angle = las.angle,
-                    .color = las.color,
-                    .start = las.start,
-                    .thickness = las.thickness,
-                };
-                las.length -= hitLength;
-                las.start.position = border.wrap(las.start.position.add(sub.localOffset()));
-                std.log.debug("{d}", .{hitLength});
-                return sub;
-            } else {
-                const laser = self.laser;
-                self.laser = null;
-                return laser;
-            }
+        const hitTs: @Vector(2, f32) = .{
+            (targetX - las.start.position.x) / offset.x,
+            (targetY - las.start.position.y) / offset.y,
+        };
+        const min: @Vector(2, f32) = @splat(0);
+        const max: @Vector(2, f32) = @splat(1);
+        const hits = @reduce(.Or, hitTs >= min) and @reduce(.Or, hitTs <= max);
+        if (!hits) {
+            const l = las.*;
+            self.laser = null;
+            return l;
         }
-        return null;
+        const hitT = @reduce(
+            .Min,
+            @select(
+                f32,
+                hitTs >= min,
+                hitTs,
+                @select(
+                    f32,
+                    hitTs <= max,
+                    hitTs,
+                    @as(@Vector(2, f32), @splat(max[0] + 1)),
+                ),
+            ),
+        );
+        std.log.debug("{}", .{hitT});
+        const hitLength = hitT * las.length;
+        const sub = Laser{
+            .length = hitLength,
+            .angle = las.angle,
+            .color = las.color,
+            .start = las.start,
+            .thickness = las.thickness,
+        };
+        las.length -= hitLength;
+        las.start.position = border.wrap(las.start.position.add(sub.localOffset()));
+        return sub;
     }
 };
 
