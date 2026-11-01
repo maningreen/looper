@@ -3,16 +3,33 @@ const rl = @import("raylib");
 const alias = @import("../alias.zig");
 const time = @import("../time.zig");
 
+const Node = @import("node.zig");
 const Bullet = @This();
 
 velocity: alias.Velocity,
 position: alias.Position,
 
 elapsed: time.Elapsed = .{ .elapsed = 0 },
-max: time.MaxLifetime = .{ .max = 0 },
+comptime lifetime: time.Lifetime = .{
+    .max = struct {
+        fn max(comptime T: type, val: *T, _: anytype) f32 {
+            return val.max;
+        }
+    }.max,
+    .after = struct {
+        fn spawn(comptime T: type, val: *T, info: anytype) time.Lifetime.Error!void {
+            Node.init(val.position).addValue(info) catch |err| switch (err) {
+                error.OutOfMemory => return error.OutOfMemory,
+                else => return time.Lifetime.Error.AfterError,
+            };
+            try info.dropDeferred(val);
+        }
+    }.spawn,
+},
+max: f32,
 
 comptime radius: alias.Radius = .{ .radius = 10 },
-comptime col: rl.Color = .ray_white,
+comptime col: rl.Color = .white,
 
 pub const speed = 5000;
 
@@ -25,7 +42,7 @@ pub fn spawn(position: rl.Vector2, target: rl.Vector2) Bullet {
     const velocity: rl.Vector2 = .{ .x = @cos(theta) * speed, .y = @sin(theta) * speed };
 
     return .{
-        .max = .{ .max = lifetime },
+        .max = lifetime,
         .velocity = .{ .velocity = velocity },
         .position = .{ .position = position },
     };

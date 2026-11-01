@@ -86,7 +86,6 @@ pub const Iterator = struct {
                 ),
             ),
         );
-        std.log.debug("{}", .{hitT});
         const hitLength = hitT * las.length;
         const sub = Laser{
             .length = hitLength,

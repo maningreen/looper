@@ -28,16 +28,14 @@ pub const camera = @import("camera.zig");
 
 pub const messages = @import("message.zig");
 
-pub const T = struct { Laser };
-
 pub const Registry = mangle.Registry(
     &.{
         Player,
         Player.Bullet,
         Player.Afterimage,
+        Player.Node,
         particle.Square,
         enemy.Simple,
-        T,
     },
     &.{
         input.system,
@@ -52,6 +50,7 @@ pub const Registry = mangle.Registry(
         render.square,
         render.health.system,
         Laser.system.render,
+        Player.Node.renderSystem,
 
         physics.velocity,
         physics.friction,
@@ -73,6 +72,7 @@ pub const Registry = mangle.Registry(
 
         camera.system,
         border.system,
+        Player.Node.addSystem,
     },
     Extra,
 );

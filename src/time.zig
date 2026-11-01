@@ -7,7 +7,7 @@ pub const Elapsed = mangle.Alias(f32, "elapsed");
 pub const Lifetime = struct {
     /// The threshold in which the elapsed time must surpass
     max: fn (type, anytype, anytype) f32,
-    /// this is called on every `process`, it's expected to deinit the value.
+    /// this is called on every `process`, it's expected to remove the value from the registry.
     /// If null, it's similar to `normal`
     after: ?fn (type, anytype, anytype) Error!void = null,
 
@@ -48,7 +48,8 @@ pub const lifetime = struct {
 
     pub fn process(comptime T: type, value: *T, info: anytype) !void {
         const life: Lifetime = value.life;
-        if (value.elapsed >= life.max(T, value, info)) {
+        const max = life.max(T, value, info);
+        if (value.elapsed >= max) {
             try if (life.after) |f|
                 f(T, value, info)
             else
