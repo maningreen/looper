@@ -4,9 +4,9 @@ const mangle = @import("mangle");
 const time = @import("../time.zig");
 const Laser = @import("../laser.zig");
 const alias = @import("../alias.zig");
-const Node = @This();
 const Flag = struct {};
 const render = @import("../render.zig");
+const Node = @This();
 
 pub const Next = struct {
     position: rl.Vector2,
@@ -16,6 +16,7 @@ pub const Next = struct {
 pos: alias.Position,
 
 /// local coordinates relative to position.
+/// if null the first item *will* be used
 next: ?Next = null,
 
 elapsed: time.Elapsed = .{ .elapsed = 0 },
@@ -37,10 +38,7 @@ pub fn setNextSys(comptime T: type, value: *T, next: Node) void {
 }
 
 pub fn setNext(self: *Node, next: Node) void {
-    self.next = .{
-        .position = next.pos.position,
-        .laser = Laser.init(self.pos, next.pos, color, 10),
-    };
+    setNextSys(Node, self, next);
 }
 
 const color = rl.Color.white;
@@ -68,12 +66,23 @@ pub fn addValue(node: Node, info: anytype) !void {
 }
 
 pub const renderSystem = struct {
-    pub const requirements = mangle.system.Signature.fromStruct(struct { next: ?Next });
+    pub const requirements = mangle.system.Signature.fromStruct(Node);
 
-    pub fn receive(comptime T: type, value: *T, event: anytype, _: anytype) void {
+    pub fn receive(comptime T: type, value: *T, event: anytype, info: anytype) void {
         switch (@TypeOf(event)) {
-            alias.Render => if (value.next) |next| {
-                next.laser.draw();
+            alias.Render => {
+                if (value.next) |next| {
+                    next.laser.draw();
+                } else {
+                    // if it doesn't go to any particular item, we draw to the first item
+
+                    // get the first item
+                    const first = info.getItemFromIndex(T, 0) orelse return;
+                    if (@intFromPtr(first) == @intFromPtr(value)) // convert to int because getItemFromIndex returns internal, not named
+                        return;
+                    const l = Laser.init(value.pos, first.pos.position, value.col, 10);
+                    l.draw();
+                }
             },
             else => {},
         }
