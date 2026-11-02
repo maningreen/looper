@@ -1,23 +1,22 @@
 const std = @import("std");
 const rl = @import("raylib");
 const mangle = @import("mangle");
-const time = @import("../time.zig");
-const Laser = @import("../laser.zig");
-const alias = @import("../alias.zig");
-const Flag = struct {};
-const render = @import("../render.zig");
-const Node = @This();
 
-pub const Next = struct {
-    position: rl.Vector2,
-    laser: Laser,
-};
+const time = @import("../time.zig");
+const enemy = @import("../enemy.zig");
+const alias = @import("../alias.zig");
+const render = @import("../render.zig");
+
+const Laser = @import("../laser.zig");
+const HealthManager = @import("../health.zig");
+const Node = @This();
+const Flag = struct {};
 
 pos: alias.Position,
 
 /// local coordinates relative to position.
 /// if null the first item *will* be used
-next: ?Next = null,
+next: Next = .none,
 
 elapsed: time.Elapsed = .{ .elapsed = 0 },
 lifespan: time.MaxLifetime = .{ .max = 3 },
@@ -27,64 +26,127 @@ comptime col: rl.Color = color,
 comptime flag: Flag = .{},
 
 pub fn init(pos: rl.Vector2) Node {
-    return .{ .pos = .{ .position = pos } };
+    return .{
+        .pos = .{ .position = pos },
+    };
 }
 
 pub fn setNextSys(comptime T: type, value: *T, next: Node) void {
-    value.next = .{
+    value.next = Next{ .next = .{
         .position = next.pos.position,
         .laser = Laser.init(value.pos, next.pos.position, color, 10),
-    };
+    } };
 }
 
 pub fn setNext(self: *Node, next: Node) void {
     setNextSys(Node, self, next);
 }
 
-const color = rl.Color.white;
-
-pub const addSystem = struct {
-    pub const requirements = mangle.system.Signature.fromStruct(Node);
-
-    pub fn receive(comptime T: type, value: *T, event: anytype, _: anytype) !void {
-        switch (@TypeOf(event)) {
-            Node => try addNode(T, value, event),
-            else => {},
-        }
-    }
-
-    pub fn addNode(comptime T: type, value: *T, node: Node) !void {
-        std.log.debug("as;ldfj", .{});
-        if (value.next == null)
-            setNextSys(T, value, node);
-    }
-};
-
 pub fn addValue(node: Node, info: anytype) !void {
     try info.emit(node);
     try info.appendDeferred(node);
 }
 
-pub const renderSystem = struct {
-    pub const requirements = mangle.system.Signature.fromStruct(Node);
+pub const Next = union(enum) {
+    next: Data,
+    first: Data,
+    none: void,
+    const Data = struct {
+        position: rl.Vector2,
+        laser: Laser,
+    };
+};
 
-    pub fn receive(comptime T: type, value: *T, event: anytype, info: anytype) void {
-        switch (@TypeOf(event)) {
-            alias.Render => {
-                if (value.next) |next| {
-                    next.laser.draw();
-                } else {
-                    // if it doesn't go to any particular item, we draw to the first item
+fn Damage(comptime T: type) type {
+    return struct {
+        comptime Enemy: type = T,
+        instance: *T,
 
-                    // get the first item
-                    const first = info.getItemFromIndex(T, 0) orelse return;
-                    if (@intFromPtr(first) == @intFromPtr(value)) // convert to int because getItemFromIndex returns internal, not named
-                        return;
-                    const l = Laser.init(value.pos, first.pos.position, value.col, 10);
-                    l.draw();
-                }
-            },
-            else => {},
+        pub const isDamage = true;
+    };
+}
+
+const color = rl.Color.white;
+
+pub const systems = struct {
+    pub const render = struct {
+        pub const requirements = mangle.system.Signature.fromStruct(Node);
+
+        pub fn receive(comptime T: type, value: *T, event: anytype, info: anytype) void {
+            switch (@TypeOf(event)) {
+                alias.Render => {
+                    lbl: switch (@as(Next, value.next)) {
+                        .none => {
+                            const first = info.getItemFromIndex(T, 0) orelse return;
+                            if (@intFromPtr(first) == @intFromPtr(value)) // convert to int because getItemFromIndex returns internal, not named
+                                return;
+                            const l = Laser.init(value.pos, first.pos.position, value.col, 10);
+                            value.next = Next{
+                                .first = .{
+                                    .laser = l,
+                                    .position = first.pos.position,
+                                },
+                            };
+                            continue :lbl @as(Next, value.next);
+                        },
+                        .first, .next => |next| {
+                            next.laser.draw();
+                        },
+                    }
+                },
+                else => {},
+            }
         }
-    }
+    };
+    pub const add = struct {
+        pub const requirements = mangle.system.Signature.fromStruct(Node);
+
+        pub fn receive(comptime T: type, value: *T, event: anytype, _: anytype) !void {
+            switch (@TypeOf(event)) {
+                Node => try addNode(T, value, event),
+                else => {},
+            }
+        }
+
+        pub fn addNode(comptime T: type, value: *T, node: Node) !void {
+            switch (value.next) {
+                .none, .first => {
+                    std.log.debug("asfsdf", .{});
+                    setNextSys(T, value, node);
+                },
+                else => {},
+            }
+        }
+    };
+
+    pub const applyDamage = struct {
+        pub const en = struct {
+            pub const requirements = mangle.system.Signature.fromStruct(struct {
+                enemyFlag: enemy.EnemyFlag,
+                radius: alias.Radius,
+                position: alias.Position,
+                hm: HealthManager,
+            });
+
+            pub fn process(comptime T: type, value: *T, info: anytype) !void {
+                try info.emit(Damage(T){ .instance = value });
+            }
+        };
+        pub const node = struct {
+            pub const requirements = mangle.system.Signature.fromStruct(Node);
+
+            pub fn receive(comptime T: type, value: *T, event: anytype, info: anytype) void {
+                if (comptime !@hasDecl(@TypeOf(event), "isDamage")) return;
+                if (comptime !@TypeOf(event).isDamage) return;
+
+                const damage: Damage(event.Enemy) = event;
+                const next = switch (value.next) {
+                    .next, .first => |v| v,
+                    .none => return,
+                };
+                if (next.laser.collidesWrap(damage.instance.position, damage.instance.radius))
+                    damage.instance.hm = damage.instance.hm.damage(5 * info.delta);
+            }
+        };
+    };
 };

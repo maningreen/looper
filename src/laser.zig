@@ -138,3 +138,33 @@ pub fn localOffset(self: Laser) rl.Vector2 {
 pub fn iterate(self: Laser) Iterator {
     return .{ .laser = self };
 }
+
+pub fn collidesWrap(self: Laser, pos: rl.Vector2, rad: f32) bool {
+    var it = self.iterate();
+    while (it.next()) |las| {
+        if (las.collides(pos, rad)) return true;
+    }
+    return false;
+}
+
+/// returns whether or not a circle with position pos and radius rad falls onto the laser
+/// This does not wrap the laser or the circle.
+pub fn collides(self: Laser, pos: rl.Vector2, rad: f32) bool {
+    // transform `pos` into local coordinates
+    const transform: rl.Vector2 = .{
+        .x = @cos(self.angle),
+        .y = @cos(self.angle),
+    };
+    const local: rl.Vector2 = .{
+        .x = (pos.x - self.start.position.x) * transform.x + (pos.y - self.start.position.y) * transform.y,
+        .y = (pos.y - self.start.position.y) * transform.x - (pos.x - self.start.position.x) * transform.y,
+    };
+
+    const range = .{ 0, self.length };
+
+    const closest = std.math.clamp(local.x, range[0], range[1]);
+    rl.drawCircleV(local, 50, .blue);
+
+    const distance = local.distanceSqr(.{ .x = closest, .y = 0 });
+    return distance <= rad * rad;
+}

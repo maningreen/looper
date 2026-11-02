@@ -7,6 +7,8 @@ const alias = @import("alias.zig");
 const HealthManager = @import("health.zig");
 const render = @import("render.zig");
 
+pub const EnemyFlag = struct {};
+
 pub const Simple = struct {
     position: alias.Position = .{ .position = .{ .x = 1000, .y = 1000 } },
     health: HealthManager = .init(5),
@@ -21,4 +23,5 @@ pub const Simple = struct {
             .width = 30,
         },
     },
+    comptime enemyFlag: EnemyFlag = .{},
 };

@@ -29,7 +29,8 @@ pub const system = struct {
         const proportion = value.hm.getScalar();
         const flag: Flag = value.flag;
 
-        std.debug.assert(proportion <= 1 and proportion >= 0);
+        if (proportion <= 0) return;
+        std.debug.assert(proportion <= 1);
 
         const health = rl.Rectangle{
             .x = flag.offset.x + value.pos.x,

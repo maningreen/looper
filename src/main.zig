@@ -89,9 +89,9 @@ pub fn main(init: std.process.Init) !void {
             }
         }
 
-        try registry.process(if (extra.paused) 0 else @floatCast(t));
-
         extra.start();
+
+        try registry.process(if (extra.paused) 0 else @floatCast(t));
 
         try registry.emit(looper.alias.Render{});
 

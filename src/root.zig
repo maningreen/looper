@@ -50,7 +50,7 @@ pub const Registry = mangle.Registry(
         render.square,
         render.health.system,
         Laser.system.render,
-        Player.Node.renderSystem,
+        Player.Node.systems.render,
 
         physics.velocity,
         physics.friction,
@@ -72,7 +72,9 @@ pub const Registry = mangle.Registry(
 
         camera.system,
         border.system,
-        Player.Node.addSystem,
+        Player.Node.systems.applyDamage.en,
+        Player.Node.systems.applyDamage.node,
+        Player.Node.systems.add,
     },
     Extra,
 );
