@@ -59,7 +59,7 @@ velocity: alias.Velocity = mangle.alias(alias.Velocity, raylib.Vector2.zero()),
 speed: alias.Speed = mangle.alias(alias.Speed, 1250),
 dashControl: alias.Speed = mangle.alias(alias.Speed, 2000 * 4),
 
-cameraFollow: camera.Follow = mangle.alias(camera.Follow, true),
+cameraFollow: camera.Follow = .{ .should = true },
 keybinds: mangle.Compose(Bindings) = .{},
 
 dashManager: dash.Manager = .{},
