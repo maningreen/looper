@@ -163,7 +163,6 @@ pub fn collides(self: Laser, pos: rl.Vector2, rad: f32) bool {
     const range = .{ 0, self.length };
 
     const closest = std.math.clamp(local.x, range[0], range[1]);
-    rl.drawCircleV(local, 50, .blue);
 
     const distance = local.distanceSqr(.{ .x = closest, .y = 0 });
     return distance <= rad * rad;

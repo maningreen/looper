@@ -7,17 +7,44 @@ const raylib = looper.raylib;
 const zlua = looper.zlua;
 const Lua = zlua.Lua;
 
-pub fn main(init: std.process.Init) !void {
+const builtin = @import("builtin");
+
+pub fn main() !void {
+    var underlying = switch (builtin.mode) {
+        .debug => blk: {
+            const base = std.heap.page_allocator;
+            const safe = std.heap.SafeAllocator.init(base, .{});
+            break :blk .{
+                .base = base,
+                .safe = safe,
+            };
+        },
+        else => .{ .gpa = std.heap.page_allocator },
+    };
+    const gpa = switch (builtin.mode) {
+        .debug => underlying.safe.allocator(),
+        else => underlying.gpa,
+    };
+    defer switch (builtin.mode) {
+        .debug => {
+            _ = underlying.safe.deinit();
+        },
+        else => {},
+    };
+
+    var threaded = std.Io.Threaded.init(gpa, .{});
+    defer threaded.deinit();
+    const io = threaded.io();
     // seed with IO, then use a DefaultPrng for speed's sake.
     var rand = std.Random.DefaultPrng.init(
         (std.Random.IoSource{
-            .io = init.io,
+            .io = io,
         }).interface().int(u64),
     );
 
     raylib.setTraceLogLevel(.warning);
 
-    const name = try init.gpa.printSentinel(
+    const name = try gpa.printSentinel(
         "Looper{s}",
         .{looper.messages.getRandom(rand.random())},
         0,
@@ -28,7 +55,7 @@ pub fn main(init: std.process.Init) !void {
     raylib.initWindow(1920 * 0.9, 1080 * 0.9, name);
     defer raylib.closeWindow();
 
-    init.gpa.free(name);
+    gpa.free(name);
 
     const shader = try raylib.loadShader(null, "./resources/shaders/palette.glsl");
     defer shader.unload();
@@ -39,13 +66,13 @@ pub fn main(init: std.process.Init) !void {
     );
     defer renderTexture.unload();
 
-    var lua = try Lua.init(init.gpa);
+    var lua = try Lua.init(gpa);
     defer lua.deinit();
     lua.openMath();
     lua.openBase();
     lua.openString();
 
-    var registry = looper.Registry.init(init.io, init.gpa, looper.Extra{
+    var registry = looper.Registry.init(io, gpa, looper.Extra{
         .camera = .{
             .offset = .zero(),
             .target = .zero(),
@@ -60,13 +87,13 @@ pub fn main(init: std.process.Init) !void {
     });
     defer registry.deinit();
 
-    try registry.addValue(try looper.Player.init(init.gpa, init.io));
+    try registry.addValue(try looper.Player.init(gpa, io));
     try registry.addValue(looper.enemy.Simple{});
 
-    var last = std.Io.Timestamp.now(init.io, .real);
+    var last = std.Io.Timestamp.now(io, .awake);
     raylib.setTargetFPS(60);
     while (!raylib.windowShouldClose()) {
-        const now = std.Io.Timestamp.now(init.io, .real);
+        const now = std.Io.Timestamp.now(io, .awake);
         const t = @as(f64, @floatFromInt(last.durationTo(now).nanoseconds)) / std.time.ns_per_s;
         last = now;
 

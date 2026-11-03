@@ -18,7 +18,7 @@ comptime lifetime: time.Lifetime = .{
     }.max,
     .after = struct {
         fn spawn(comptime T: type, val: *T, info: anytype) time.Lifetime.Error!void {
-            Node.init(val.position).addValue(info) catch |err| switch (err) {
+            Node.initRegistry(val.position, info).addValue(info) catch |err| switch (err) {
                 error.OutOfMemory => return error.OutOfMemory,
                 else => return time.Lifetime.Error.AfterError,
             };
