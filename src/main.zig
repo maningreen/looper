@@ -21,7 +21,7 @@ pub fn main() !void {
         },
         else => .{ .gpa = std.heap.page_allocator },
     };
-    const gpa = switch (builtin.mode) {
+    const gpa: std.mem.Allocator = switch (builtin.mode) {
         .debug => underlying.safe.allocator(),
         else => underlying.gpa,
     };
@@ -35,6 +35,10 @@ pub fn main() !void {
     var threaded = std.Io.Threaded.init(gpa, .{});
     defer threaded.deinit();
     const io = threaded.io();
+
+    const cwd = std.Io.Dir.cwd();
+    defer cwd.close(io);
+
     // seed with IO, then use a DefaultPrng for speed's sake.
     var rand = std.Random.DefaultPrng.init(
         (std.Random.IoSource{
@@ -42,13 +46,19 @@ pub fn main() !void {
         }).interface().int(u64),
     );
 
+    const stdoutHandle = std.Io.File.stdout();
+    defer stdoutHandle.close(io);
+
+    var stdoutBuf: [512]u8 = undefined;
+    var stdout = stdoutHandle.writer(io, stdoutBuf[0..]);
+
     raylib.setTraceLogLevel(.warning);
 
-    const name = looper.messages.getRandom(rand.random());
+    const windowName = looper.messages.getRandom(rand.random());
     if (@import("builtin").mode == .debug)
-        std.log.debug("Name: {s}", .{name});
+        std.log.debug("Name: {s}", .{windowName});
 
-    raylib.initWindow(1920 * 0.9, 1080 * 0.9, name);
+    raylib.initWindow(1920 * 0.9, 1080 * 0.9, windowName);
     defer raylib.closeWindow();
 
     const shader = try raylib.loadShader(null, "./resources/shaders/palette.glsl");
@@ -60,15 +70,48 @@ pub fn main() !void {
     );
     defer renderTexture.unload();
 
-    var lua = try Lua.init(gpa, .{ .limits = .{}, .stdlib = .full, .capabilities = .{} });
+    var lua = try Lua.init(
+        gpa,
+        .{
+            .limits = .{},
+            .stdlib = .full,
+            .capabilities = .{
+                .filesystem = .{
+                    .host_dir = .{ .dir = cwd },
+                },
+                .io = .{
+                    .warnings = true,
+                    .stdout = &stdout.interface,
+                    .stdout_flush = .print,
+                },
+            },
+        },
+    );
     defer lua.deinit();
-    var chunk = try lua.loadString("return 1, 5", .{ .name = "=testing" });
 
-    var ret = try chunk.call(.{}, zlua.Tuple(&.{ u32, u32 }));
-    defer ret.deinit();
-    std.log.debug("{any}", .{ret});
+    {
+        const dir = try cwd.openDir(io, looper.Mod.file.directory, .{.iterate = true});
+        defer dir.close(io);
+        var listing = try looper.Mod.Listing.load(io, dir, gpa);
+        defer listing.deinit(gpa);
+        for (listing.names) |name| {
 
-    chunk.deinit();
+            const path = try gpa.print("{s}/{s}{s}", .{ looper.Mod.file.directory, name, looper.Mod.Listing.extention });
+            defer gpa.free(path);
+
+            const file = try cwd.openFile(io, path, .{});
+            defer file.close(io);
+
+            var readBuf: [1028]u8 = undefined;
+            var reader = file.reader(io, readBuf[0..]);
+            const contents = try reader.interface.allocRemaining(gpa, .limited(1028 * 2));
+            defer gpa.free(contents);
+
+            var thunk = try lua.loadString(contents, .{ .name = name });
+            defer thunk.deinit();
+            try thunk.call(.{}, void);
+        }
+    }
 
     var registry = looper.Registry.init(io, gpa, looper.Extra{
         .camera = .{
