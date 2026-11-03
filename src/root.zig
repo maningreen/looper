@@ -74,7 +74,6 @@ pub const Registry = mangle.Registry(
         border.system,
         Player.Node.systems.applyDamage.en,
         Player.Node.systems.applyDamage.node,
-        Player.Node.systems.add,
     },
     Extra,
 );
