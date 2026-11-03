@@ -151,14 +151,22 @@ pub fn collidesWrap(self: Laser, pos: rl.Vector2, rad: f32) bool {
 /// This does not wrap the laser or the circle.
 pub fn collides(self: Laser, pos: rl.Vector2, rad: f32) bool {
     // transform `pos` into local coordinates
-    const transform: rl.Vector2 = .{
-        .x = @cos(self.angle),
-        .y = @cos(self.angle),
+    const transform: struct { rl.Vector2, rl.Vector2 } = .{
+        rl.Vector2{ .x = @cos(self.angle), .y = @sin(self.angle) },
+        rl.Vector2{ .x = -@sin(self.angle), .y = @cos(self.angle) },
     };
-    const local: rl.Vector2 = .{
-        .x = (pos.x - self.start.position.x) * transform.x + (pos.y - self.start.position.y) * transform.y,
-        .y = (pos.y - self.start.position.y) * transform.x - (pos.x - self.start.position.x) * transform.y,
-    };
+
+    const offset = pos.subtract(self.start.position);
+
+    // (i'm learning linear algebra give me a moment)
+    // i = [ cos(theta) ] j = [ sin(theta) ]
+    //     [ sin(theta) ]     [ cos(theta) ]
+    // i(x) + j(y)
+
+    const local: rl.Vector2 = transform[0].scale(offset.x).add(transform[1].scale(offset.y));
+
+    rl.drawCircleV(border.wrap(local), 50, .blue);
+    _ = &rad;
 
     const range = .{ 0, self.length };
 
