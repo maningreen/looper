@@ -28,11 +28,20 @@ comptime lifespan: time.Lifetime = .{
     }.max,
     .after = struct {
         pub fn after(comptime T: type, value: *T, info: anytype) time.Lifetime.Error!void {
-            info.emit(systems.add.Pop{}) catch |err| switch (err) {
-                error.OutOfMemory => return error.OutOfMemory,
-                else => return time.Lifetime.Error.AfterError,
-            };
             try info.dropDeferred(value);
+            // due to the stable removal in `Registry().drop` we can assume that `value == info.getItemFromIndex(T, 0, .bottom)`
+            std.debug.assert(
+                value == @as(*T, @ptrCast(info.getItemFromIndex(T, 0, .bottom))),
+            );
+
+            const last = info.getItemFromIndex(T, 0, .top) orelse return;
+            const U = @TypeOf(last.*);
+            const first = info.getItemFromIndex(T, 1, .bottom) orelse return;
+            if (last == first) {
+                first.next = Next.none;
+            } else {
+                setNextSys(U, last, mangle.flags.originalType(first.*), .first);
+            }
         }
     }.after,
 },
@@ -51,20 +60,33 @@ pub fn initRegistry(pos: rl.Vector2, info: anytype) Node {
     if (maybe) |first| {
         return Node{
             .pos = .{ .position = pos },
-            .next = Next{ .first = Next.Data{
-                .position = first.pos.position,
-                .laser = Laser.init(pos, first.pos.position, .white, 10),
-            } },
+            .next = .{
+                .first = Next.Data{
+                    .position = first.pos.position,
+                    .laser = Laser.init(pos, first.pos.position, .white, 10),
+                },
+            },
         };
     } else return .{ .pos = .{ .position = pos } };
 }
 
 pub fn setNextSys(comptime T: type, value: *T, next: Node, comptime tag: std.meta.Tag(Next)) void {
     comptime std.debug.assert(tag != .none);
-    value.next = @unionInit(Next, @tagName(tag), .{
-        .position = next.pos.position,
-        .laser = Laser.init(value.pos, next.pos.position, color, 10),
-    });
+    switch (@FieldType(T, "pos")) {
+        alias.Position => {
+            value.next = @unionInit(Next, @tagName(tag), .{
+                .position = next.pos.position,
+                .laser = Laser.init(value.pos.position, next.pos.position, color, 10),
+            });
+        },
+        rl.Vector2 => {
+            value.next = @unionInit(Next, @tagName(tag), .{
+                .position = next.pos.position,
+                .laser = Laser.init(value.pos, next.pos.position, color, 10),
+            });
+        },
+        else => comptime unreachable,
+    }
 }
 
 pub fn setNext(self: *Node, next: Node) void {
@@ -73,7 +95,10 @@ pub fn setNext(self: *Node, next: Node) void {
 
 pub fn addValue(node: Node, info: anytype) !void {
     try info.appendDeferred(node);
-    try info.emit(systems.add.Push{ .node = node });
+
+    const last = info.getItemFromIndex(Node, 0, .top) orelse return;
+    std.debug.assert(last.next == .first or last.next == .none);
+    setNextSys(@TypeOf(last.*), last, node, .next);
 }
 
 pub const Next = union(enum) {
@@ -116,44 +141,6 @@ pub const systems = struct {
                             next.laser.draw();
                         },
                     }
-                },
-                else => {},
-            }
-        }
-    };
-
-    pub const add = struct {
-        pub const requirements = mangle.system.Signature.fromStruct(Node);
-
-        pub const Push = struct {
-            node: Node,
-        };
-
-        pub const Pop = struct {};
-
-        pub fn receive(comptime T: type, value: *T, event: anytype, info: anytype) !void {
-            switch (@TypeOf(event)) {
-                Push => addNode(T, value, event.node, info),
-                Pop => try dropNode(T, value, info),
-                else => {},
-            }
-        }
-
-        pub fn addNode(comptime T: type, value: *T, node: Node, _: anytype) void {
-            switch (value.next) {
-                .none, .first => setNextSys(T, value, node, .next),
-                .next => {},
-            }
-        }
-
-        pub fn dropNode(comptime T: type, value: *T, info: anytype) !void {
-            switch (value.next) {
-                .first => {
-                    const maybe = info.getItemFromIndex(Node, 1, .bottom);
-                    if (maybe) |second|
-                        setNextSys(T, value, mangle.flags.originalType(second.*), .first)
-                    else
-                        value.next = .none;
                 },
                 else => {},
             }

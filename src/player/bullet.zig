@@ -21,7 +21,6 @@ comptime lifetime: time.Lifetime = .{
         fn spawn(comptime T: type, val: *T, info: anytype) time.Lifetime.Error!void {
             Node.initRegistry(val.target, info).addValue(info) catch |err| switch (err) {
                 error.OutOfMemory => return error.OutOfMemory,
-                else => return time.Lifetime.Error.AfterError,
             };
             try info.dropDeferred(val);
         }
