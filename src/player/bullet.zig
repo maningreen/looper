@@ -8,6 +8,7 @@ const Bullet = @This();
 
 velocity: alias.Velocity,
 position: alias.Position,
+target: rl.Vector2 = .zero(),
 
 elapsed: time.Elapsed = .{ .elapsed = 0 },
 comptime lifetime: time.Lifetime = .{
@@ -18,7 +19,7 @@ comptime lifetime: time.Lifetime = .{
     }.max,
     .after = struct {
         fn spawn(comptime T: type, val: *T, info: anytype) time.Lifetime.Error!void {
-            Node.initRegistry(val.position, info).addValue(info) catch |err| switch (err) {
+            Node.initRegistry(val.target, info).addValue(info) catch |err| switch (err) {
                 error.OutOfMemory => return error.OutOfMemory,
                 else => return time.Lifetime.Error.AfterError,
             };
@@ -45,5 +46,6 @@ pub fn spawn(position: rl.Vector2, target: rl.Vector2) Bullet {
         .max = lifetime,
         .velocity = .{ .velocity = velocity },
         .position = .{ .position = position },
+        .target = target,
     };
 }
