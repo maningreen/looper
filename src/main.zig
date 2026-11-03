@@ -44,18 +44,12 @@ pub fn main() !void {
 
     raylib.setTraceLogLevel(.warning);
 
-    const name = try gpa.printSentinel(
-        "Looper{s}",
-        .{looper.messages.getRandom(rand.random())},
-        0,
-    );
+    const name = looper.messages.getRandom(rand.random());
     if (@import("builtin").mode == .debug)
         std.log.debug("Name: {s}", .{name});
 
     raylib.initWindow(1920 * 0.9, 1080 * 0.9, name);
     defer raylib.closeWindow();
-
-    gpa.free(name);
 
     const shader = try raylib.loadShader(null, "./resources/shaders/palette.glsl");
     defer shader.unload();
@@ -91,7 +85,7 @@ pub fn main() !void {
     try registry.addValue(looper.enemy.Simple{});
 
     var last = std.Io.Timestamp.now(io, .awake);
-    raylib.setTargetFPS(60);
+    raylib.setTargetFPS(240);
     while (!raylib.windowShouldClose()) {
         const now = std.Io.Timestamp.now(io, .awake);
         const t = @as(f64, @floatFromInt(last.durationTo(now).nanoseconds)) / std.time.ns_per_s;

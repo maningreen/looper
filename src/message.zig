@@ -2,66 +2,66 @@ const std = @import("std");
 
 /// writing these is most likely a huge waste of time.
 /// TODO: write more
-const messages: []const []const u8 = &.{
-    "",
-    ": made with love",
-    ": made with anger",
-    ": with linux support!",
-    ": with many regrets",
-    ": not a single sprite",
-    ": still without sprites",
-    ": never had developer art",
+const messages: []const [:0]const u8 = &.{
+    "Looper",
+    "Looper: made with love",
+    "Looper: made with anger",
+    "Looper: with linux support!",
+    "Looper: with many regrets",
+    "Looper: not a single sprite",
+    "Looper: still without sprites",
+    "Looper: never had developer art",
 
-    ": please enjoy!",
+    "Looper: please enjoy!",
 
-    ": terraria-minecraft joke",
-    ": splash-text stolen from terraria",
-    ": splash-text stolen from minecraft",
-    ": useless feature > useful feature",
+    "Looper: terraria-minecraft joke",
+    "Looper: splash-text stolen from terraria",
+    "Looper: splash-text stolen from minecraft",
+    "Looper: useless feature > useful feature",
 
-    ": an asteroids clone",
+    "Looper: an asteroids clone",
 
-    "-ing the rooms",
-    ": where are you? (and i'm so sorry)",
-    ": made by a creep, perhaps a weirdo",
+    "Looper-ing the rooms",
+    "Looper: where are you? (and i'm so sorry)",
+    "Looper: made by a creep, perhaps a weirdo",
 
-    ": made on nixos (btw)",
-    ": i used to use arch (btw)",
+    "Looper: made on nixos (btw)",
+    "Looper: i used to use arch (btw)",
 
-    ": written in zig",
-    ": using raylib",
+    "Looper: written in zig",
+    "Looper: using raylib",
     // ": and lua support!",
 
-    ": consider modding!",
+    "Looper: consider modding!",
 
-    ": 1. I",
-    ": 2. found",
-    ": 3. these",
-    ": 4. dumb",
-    ": 5. texts",
-    ": 6. and",
-    ": 7. all",
-    ": 8. I",
-    ": 9. got",
-    ": 10. was",
-    ": 11. this",
-    ": 12. lousy",
-    ": 13. message",
+    "Looper: 1. I",
+    "Looper: 2. found",
+    "Looper: 3. these",
+    "Looper: 4. dumb",
+    "Looper: 5. texts",
+    "Looper: 6. and",
+    "Looper: 7. all",
+    "Looper: 8. I",
+    "Looper: 9. got",
+    "Looper: 10. was",
+    "Looper: 11. this",
+    "Looper: 12. lousy",
+    "Looper: 13. message",
 
-    ": You can edit the palette in ./resources/shaders",
+    "Looper: You can edit the palette in ./resources/shaders",
 
-    ": If this message is in the final build make fun of me",
-    ": time was spent on these",
+    "Looper: If this message is in the final build make fun of me",
+    "Looper: time was spent on these",
 
-    ": I can code, but I can't spell",
-    ": If you mod multiplayer I'll give you a dollar",
+    "Looper: I can code, but I can't spell",
+    "Looper: If you mod multiplayer I'll give you a dollar",
 
-    ": buzzword-buzzword-buzzword",
-    ": insert witty-self-referential joke",
+    "Looper: buzzword-buzzword-buzzword",
+    "Looper: insert witty-self-referential joke",
 
-    ": better than geometry class!",
+    "Looper: better than geometry class!",
 };
 
-pub inline fn getRandom(r: std.Random) []const u8 {
+pub inline fn getRandom(r: std.Random) [:0]const u8 {
     return messages[r.int(usize) % messages.len];
 }
