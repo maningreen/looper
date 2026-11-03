@@ -13,8 +13,8 @@
             .hash = "raylib_zig-6.2.0-KE8RELGmBQDX1v1DqBN57pNxJ-b-MIa1S-M7NXT9Eplr",
         },
         .zlua = .{
-            .url = "git+https://github.com/natecraddock/ziglua#bf2fb9abc166864e5ddc77c76bf009471139f6a7",
-            .hash = "zlua-0.1.0-hGRpC7KqBQCJQLGzzzGXersJaMRLXkiuRABoxD5zebHf",
+            .url = "git+https://github.com/grant-wade/zlua.git#fe7c215986ac00bb6bd5abe183519d3a40f4a895",
+            .hash = "zlua-0.8.0-S9VpHEDRPgBl4Il24lL7fjKSh__-RwFHItQG9lEHji7d",
         },
     },
     .paths = .{

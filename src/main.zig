@@ -5,7 +5,7 @@ const looper = @import("looper");
 const raylib = looper.raylib;
 
 const zlua = looper.zlua;
-const Lua = zlua.Lua;
+const Lua = zlua.State;
 
 const builtin = @import("builtin");
 
@@ -60,11 +60,15 @@ pub fn main() !void {
     );
     defer renderTexture.unload();
 
-    var lua = try Lua.init(gpa);
+    var lua = try Lua.init(gpa, .{ .limits = .{}, .stdlib = .full, .capabilities = .{} });
     defer lua.deinit();
-    lua.openMath();
-    lua.openBase();
-    lua.openString();
+    var chunk = try lua.loadString("return 1, 5", .{ .name = "=testing" });
+
+    var ret = try chunk.call(.{}, zlua.Tuple(&.{ u32, u32 }));
+    defer ret.deinit();
+    std.log.debug("{any}", .{ret});
+
+    chunk.deinit();
 
     var registry = looper.Registry.init(io, gpa, looper.Extra{
         .camera = .{

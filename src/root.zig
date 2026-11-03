@@ -28,6 +28,8 @@ pub const camera = @import("camera.zig");
 
 pub const messages = @import("message.zig");
 
+pub const Mod = @import("mod.zig");
+
 pub const Registry = mangle.Registry(
     &.{
         Player,
@@ -98,7 +100,7 @@ pub const Extra = struct {
         .zoom = 1.0 / @as(comptime_float, pixelLength),
     },
     random: std.Random,
-    lua: *zlua.Lua,
+    lua: zlua.State,
 
     renderTexture: raylib.RenderTexture2D,
     shader: raylib.Shader,
