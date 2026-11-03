@@ -39,12 +39,13 @@
           packages = [
             inputs.zig-flake.packages.${system}.default
             inputs.zls.packages.${system}.default
+            pkgs.perf
           ]
           ++ libraries;
         };
 
         minimal = pkgs.mkShell {
-          packages = libraries;
+          packages = [ pkgs.perf ] ++ libraries;
         };
       }
     ) inputs.nixpkgs.legacyPackages;

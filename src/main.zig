@@ -85,7 +85,7 @@ pub fn main() !void {
     try registry.addValue(looper.enemy.Simple{});
 
     var last = std.Io.Timestamp.now(io, .awake);
-    raylib.setTargetFPS(240);
+    raylib.setTargetFPS(60);
     while (!raylib.windowShouldClose()) {
         const now = std.Io.Timestamp.now(io, .awake);
         const t = @as(f64, @floatFromInt(last.durationTo(now).nanoseconds)) / std.time.ns_per_s;
