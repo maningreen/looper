@@ -48,6 +48,11 @@ pub fn checkCollisionCircles(posA: rl.Vector2, radiusA: f32, posB: rl.Vector2, r
     return distance <= minDist;
 }
 
+pub fn wrapRelative(anchor: rl.Vector2, pos: rl.Vector2) rl.Vector2 {
+    const shortest = getShortestPathTo(anchor, pos);
+    return anchor.add(shortest);
+}
+
 pub fn render() void {
     rl.drawRectangleLinesEx(
         .{

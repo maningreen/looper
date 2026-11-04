@@ -6,11 +6,14 @@ const time = @import("../time.zig");
 const enemy = @import("../enemy.zig");
 const alias = @import("../alias.zig");
 const render = @import("../render.zig");
+const util = @import("../util.zig");
 
 const Laser = @import("../laser.zig");
 const HealthManager = @import("../health.zig");
 const Node = @This();
 const Flag = struct {};
+
+pub var positions: std.ArrayList(rl.Vector2) = .empty;
 
 pos: alias.Position,
 
@@ -55,6 +58,11 @@ pub fn init(pos: rl.Vector2) Node {
     };
 }
 
+pub fn deinit(comptime T: type, _: *T, _: anytype) void {
+    _ = positions.orderedRemove(0);
+}
+
+
 pub fn initRegistry(pos: rl.Vector2, info: anytype) Node {
     const maybe = info.getItemFromIndex(Node, 0, .bottom);
     if (maybe) |first| {
@@ -95,6 +103,8 @@ pub fn setNext(self: *Node, next: Node) void {
 
 pub fn addValue(node: Node, info: anytype) !void {
     try info.appendDeferred(node);
+
+    try positions.append(info.gpa, node.pos.position);
 
     const last = info.getItemFromIndex(Node, 0, .top) orelse return;
     std.debug.assert(last.next == .first or last.next == .none);
@@ -157,7 +167,11 @@ pub const systems = struct {
             });
 
             pub fn process(comptime T: type, value: *T, info: anytype) !void {
-                try info.emit(Damage(T){ .instance = value });
+                const hits = util.checkCollisionCirclePoly(value.position, value.radius, positions.items);
+                if (hits) {
+                    value.hm = value.hm.damage(info.delta * 5);
+                    std.log.debug(";sadlfkasd", .{});
+                }
             }
         };
         pub const node = struct {

@@ -45,16 +45,18 @@ pub fn build(b: *std.Build) void {
         }
     }
 
+    const main = b.createModule(.{
+        .root_source_file = b.path("src/main.zig"),
+        .target = target,
+        .optimize = optimize,
+        .imports = &.{
+            .{ .name = "looper", .module = mod },
+        },
+    });
+
     const exe = b.addExecutable(.{
         .name = "looper",
-        .root_module = b.createModule(.{
-            .root_source_file = b.path("src/main.zig"),
-            .target = target,
-            .optimize = optimize,
-            .imports = &.{
-                .{ .name = "looper", .module = mod },
-            },
-        }),
+        .root_module = main,
     });
 
     b.installArtifact(exe);
@@ -64,6 +66,11 @@ pub fn build(b: *std.Build) void {
     const runCmd = b.addRunArtifact(exe);
     runStep.dependOn(&runCmd.step);
 
+    const checkExe = b.addExecutable(.{
+        .name = "looper",
+        .root_module = main,
+    });
+
     const check = b.step("check", "check if the app compiles");
-    check.dependOn(&exe.step);
+    check.dependOn(&checkExe.step);
 }

@@ -32,12 +32,13 @@ pub fn main() !void {
         else => {},
     };
 
+    defer looper.deinit(gpa);
+
     var threaded = std.Io.Threaded.init(gpa, .{});
     defer threaded.deinit();
     const io = threaded.io();
 
     const cwd = std.Io.Dir.cwd();
-    defer cwd.close(io);
 
     // seed with IO, then use a DefaultPrng for speed's sake.
     var rand = std.Random.DefaultPrng.init(
@@ -65,8 +66,8 @@ pub fn main() !void {
     defer shader.unload();
 
     const renderTexture = try raylib.loadRenderTexture(
-        @trunc(looper.border.length / looper.pixelLength),
-        @trunc(looper.border.length / looper.pixelLength),
+        @trunc(looper.border.length / looper.Extra.defaultPixelLength),
+        @trunc(looper.border.length / looper.Extra.defaultPixelLength),
     );
     defer renderTexture.unload();
 
@@ -90,12 +91,11 @@ pub fn main() !void {
     defer lua.deinit();
 
     {
-        const dir = try cwd.openDir(io, looper.Mod.file.directory, .{.iterate = true});
+        const dir = try cwd.openDir(io, looper.Mod.file.directory, .{ .iterate = true });
         defer dir.close(io);
         var listing = try looper.Mod.Listing.load(io, dir, gpa);
         defer listing.deinit(gpa);
         for (listing.names) |name| {
-
             const path = try gpa.print("{s}/{s}{s}", .{ looper.Mod.file.directory, name, looper.Mod.Listing.extention });
             defer gpa.free(path);
 
@@ -106,10 +106,6 @@ pub fn main() !void {
             var reader = file.reader(io, readBuf[0..]);
             const contents = try reader.interface.allocRemaining(gpa, .limited(1028 * 2));
             defer gpa.free(contents);
-
-            var thunk = try lua.loadString(contents, .{ .name = name });
-            defer thunk.deinit();
-            try thunk.call(.{}, void);
         }
     }
 

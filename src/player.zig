@@ -67,6 +67,7 @@ particleManager: particle.Manager = .{ .time = .{ .elapsed = 0 } },
 resource: Resource = .{
     .count = 4,
     .rate = 0.75,
+    .time = .{ .elapsed = 4 * 0.75 },
 },
 
 pub const default = Player{};

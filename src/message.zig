@@ -60,7 +60,16 @@ const messages: []const [:0]const u8 = &.{
     "Looper: insert witty-self-referential joke",
 
     "Looper: better than geometry class!",
+    "Looper: there's a secret splash-text in the binary!",
 };
+
+pub const secrets: []const [:0]const u8 = &.{
+    "Looper: the secret message :), there's more!\n, did you use `strings` for this?\nif you did that'd be cool",
+};
+
+comptime {
+    _ = &secrets;
+}
 
 pub inline fn getRandom(r: std.Random) [:0]const u8 {
     return messages[r.int(usize) % messages.len];

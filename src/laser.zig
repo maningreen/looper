@@ -3,6 +3,7 @@ const alias = @import("alias.zig");
 const mangle = @import("mangle");
 const rl = @import("raylib");
 const border = @import("border.zig");
+const util = @import("util.zig");
 
 const Laser = @This();
 
@@ -151,27 +152,6 @@ pub fn collidesWrap(self: Laser, pos: rl.Vector2, rad: f32) bool {
 /// This does not wrap the laser or the circle.
 pub fn collides(self: Laser, pos: rl.Vector2, rad: f32) bool {
     // transform `pos` into local coordinates
-    const transform: struct { rl.Vector2, rl.Vector2 } = .{
-        rl.Vector2{ .x = @cos(-self.angle), .y = @sin(-self.angle) },
-        rl.Vector2{ .x = -@sin(-self.angle), .y = @cos(-self.angle) },
-    };
-
-    const offset = pos.subtract(self.start.position);
-
-    // (i'm learning linear algebra give me a moment)
-    // i = [ cos(theta) ] j = [ -sin(theta) ]
-    //     [ sin(theta) ]     [ cos(theta) ]
-    // i(x) + j(y)
-
-    const iPart = transform[0].scale(offset.x);
-    const jPart = transform[1].scale(offset.y);
-    const local: rl.Vector2 = iPart.add(jPart);
-
-    const range = .{ 0, self.length };
-
-    const closest = std.math.clamp(local.x, range[0], range[1]);
-
-    const distance = local.distanceSqr(.{ .x = closest, .y = 0 });
-
-    return distance <= rad * rad;
+    const end = self.endPos();
+    return util.checkCollisionLineCircle(self.start, end, pos, rad);
 }
